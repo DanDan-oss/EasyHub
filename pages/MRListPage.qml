@@ -19,7 +19,7 @@ Page {
             title: "Fix log overwite bug"
             project: "MSIPTool"
             targetBranch: "ReleaseBranch_main"
-            state: "Opened"
+            mrState: "Opened"
             pipelineStatus: "Success"
             addedLines: 10
             deletedLines: 15
@@ -32,7 +32,7 @@ Page {
             title: "Fix login exception"
             project: "WeSpace"
             targetBranch: "master"
-            state: "Opened"
+            mrState: "Opened"
             pipelineStatus: "Running"
             addedLines: 8
             deletedLines: 3
@@ -44,7 +44,7 @@ Page {
             title: "Update configuration loader"
             project: "eAPP610"
             targetBranch: "ICP-D"
-            state: "Opened"
+            mrState: "Opened"
             pipelineStatus: "failed"
             addedLines: 23
             deletedLines: 11
@@ -75,7 +75,7 @@ Page {
         Rectangle {
             Layout.preferredWidth: 420
             Layout.fillHeight: true
-            color: "#f5f5f5"
+            color: AppTheme.background
 
             ColumnLayout {
                 anchors.fill: parent
@@ -89,6 +89,7 @@ Page {
                         text: qsTr("Merge Requests")
                         font.pixelSize: 22
                         font.bold: true
+                        color: AppTheme.textPrimary
                     }
                     Item {
                         Layout.fillWidth: true
@@ -96,7 +97,24 @@ Page {
 
                     Button {
                         text: qsTr("Logout")
+                        background: Rectangle {
+                            radius: AppTheme.radiusSmall
+                            color: parent.hovered ? AppTheme.surfaceHover : AppTheme.surface
+                            border.width: 1
+                            border.color: AppTheme.border
+                        }
+
+                        contentItem: Label {
+                            text: parent.text
+                            color: AppTheme.textPrimary
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
                         onClicked: {
+                            if(mrListPage.detailVisible){
+                                mrListPage.detailVisible=false
+                                mrListPage.detailClosed()
+                            }
                             mrListPage.logout()
                         }
                     }
@@ -106,15 +124,59 @@ Page {
                     Layout.fillWidth: true
                     TabButton {
                         text: qsTr("To Merge")
+                        background: Rectangle {
+                            radius: AppTheme.radiusMedium
+                            color: parent.checked ? AppTheme.primarySoft : "transparent"
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
+                            font.bold: parent.checked
+                        }
                     }
                     TabButton {
                         text: qsTr("To Review")
+                        background: Rectangle {
+                            radius: AppTheme.radiusMedium
+                            color: parent.checked ? AppTheme.primarySoft : "transparent"
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
+                            font.bold: parent.checked
+                        }
                     }
                     TabButton {
                         text: qsTr("Created")
+                        background: Rectangle {
+                            radius: AppTheme.radiusMedium
+                            color: parent.checked ? AppTheme.primarySoft : "transparent"
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
+                            font.bold: parent.checked
+                        }
                     }
                     TabButton {
                         text: qsTr("To Approve")
+                        background: Rectangle {
+                            radius: AppTheme.radiusMedium
+                            color: parent.checked ? AppTheme.primarySoft : "transparent"
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
+                            font.bold: parent.checked
+                        }
                     }
                 }
 
@@ -156,13 +218,22 @@ Page {
                     model: mrModel
 
                     delegate: Rectangle {
+                        id: mrCard
                         width: mrList.width
                         height: 145
-                        radius: 6
+                        property bool hovered: false
+                        radius: AppTheme.radiusMedium
                         border.width: 1
-                        border.color: "#d0d0d0"
-                        color: "#ffffff"
+                        border.color: hovered ? "#C9D8F2" : AppTheme.border
+                        color:  hovered ?  AppTheme.surfaceHover : AppTheme.surface
 
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            acceptedButtons: Qt.NoButton
+                            onEntered: mrCard.hovered = true
+                            onExited: mrCard.hovered = false
+                        }
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 10
@@ -178,6 +249,7 @@ Page {
                                 Label {
                                     text: title
                                     font.bold: true
+                                    color:  AppTheme.textPrimary
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                     MouseArea {
@@ -189,7 +261,7 @@ Page {
                                             detailPanel.mrTitle=title
                                             detailPanel.projectName=project
                                             detailPanel.targetBranch=targetBranch
-                                            detailPanel.state=state
+                                            detailPanel.mrState=mrState
                                             detailPanel.pipelineStatus=pipelineStatus
                                             if(!mrListPage.detailVisible) {
                                                 mrListPage.detailVisible=true
@@ -199,7 +271,7 @@ Page {
                                     }
                                 }
                                 Label {
-                                    text: state
+                                    text: mrState
                                 }
                             }
                             // 第二行: 项目 ->目标分支
@@ -207,21 +279,46 @@ Page {
                                 Layout.fillWidth: true
                                 text: project + " -> " + targetBranch
                                 elide: Text.ElideRight
+                                color: AppTheme.textSecondary
                             }
                             // 第三行: 代码增删 + 流水线状态
                             RowLayout {
                                 Layout.fillWidth: true
                                 Label {
                                     text: "+" + addedLines
+                                    color: AppTheme.success
                                 }
                                 Label {
                                     text: "-" + deletedLines
+                                    color: AppTheme.danger
                                 }
                                 Item {
                                     Layout.fillWidth: true
                                 }
-                                Label {
-                                    text: pipelineStatus
+                                Rectangle {
+                                    radius: AppTheme.radiusSmall
+                                    implicitHeight: 24
+                                    implicitWidth: pipelineLabel.implicitWidth +16
+
+                                    color: {
+                                        if(pipelineStatus === "Success" || pipelineStatus === "success")
+                                            return AppTheme.successSoft
+                                        if(pipelineStatus === "Failed" || pipelineStatus === "failed")
+                                            return AppTheme.dangerSoft
+                                        return AppTheme.warningSoft
+                                    }
+                                    Label {
+                                        id: pipelineLabel
+                                        anchors.centerIn: parent
+                                        text: pipelineStatus
+                                        color: {
+                                            if(pipelineStatus === "Success" || pipelineStatus === "success")
+                                                return AppTheme.success
+                                            if(pipelineStatus === "Failed" || pipelineStatus === "failed")
+                                                return AppTheme.danger
+                                            return AppTheme.warning
+                                        }
+                                    }
                                 }
                             }
 

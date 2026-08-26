@@ -6,53 +6,84 @@ Page{
     id: loginPage
     signal loginSuccess()
 
-    Column{
-        width: 280
+    background: Rectangle {
+        color: AppTheme.background
+    }
+
+    Rectangle {
+        width: 340
+        height: 290
         anchors.centerIn: parent
-        spacing: 16
+        radius: 16
+        color: AppTheme.surface
 
-        Label{
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: qsTr("EasyHub")
-            font.pixelSize: 32
-            font.bold: true
-        }
+        border.width: 1
+        border.color: AppTheme.border
 
-        Label{
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: qsTr("Developer Workspace")
-        }
+        Column{
+            width: 280
+            anchors.centerIn: parent
+            spacing: 14
 
-        TextField{
-            id: usernameField
-            width: parent.width
-            placeholderText: qsTr("Username")
-        }
+            Label{
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("EasyHub")
+                font.pixelSize: 28
+                font.bold: true
+                color: AppTheme.textPrimary
+            }
 
-        TextField{
-            id: passwordField
-            width: parent.width
-            placeholderText: qsTr("Password")
-            echoMode: TextInput.Password
-        }
+            Label{
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Developer Workspace")
+                color: AppTheme.textPrimary
+            }
 
-        Button{
-            width: parent.width
-            text: qsTr("Login")
-            onClicked: {
-                console.log("Login button clicked")
-                errorLabel.text = ""
-                authService.login(usernameField.text, passwordField.text)
+            TextField{
+                id: usernameField
+                width: parent.width
+                placeholderText: qsTr("Username")
+            }
+
+            TextField{
+                id: passwordField
+                width: parent.width
+                placeholderText: qsTr("Password")
+                echoMode: TextInput.Password
+            }
+
+            Button{
+                width: parent.width
+                text: qsTr("Login")
+                background: Rectangle {
+                    radius: AppTheme.radiusSmall
+                    color: parent.down ? "#2F60DF" : AppTheme.primary
+                }
+
+                contentItem: Label {
+                    text: parent.text
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.bold: true
+                }
+                onClicked: {
+                    console.log("Login button clicked")
+                    errorLabel.text = ""
+                    authService.login(usernameField.text, passwordField.text)
+                }
+            }
+
+            Label{
+                id: errorLabel
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                color: AppTheme.danger
             }
         }
-
-        Label{
-            id: errorLabel
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-        }
     }
+
 
     Connections{
         target: authService

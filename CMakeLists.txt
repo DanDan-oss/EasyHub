@@ -6,8 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick
+    QuickControls2
     LinguistTools
 )
+
 
 qt_standard_project_setup(
     REQUIRES 6.8
@@ -21,6 +23,12 @@ qt_add_executable(appEasyHub
     service/AuthService.h
 )
 
+set_source_files_properties(
+    pages/AppTheme.qml
+    PROPERTIES
+        QT_QML_SINGLETON_TYPE TRUE
+)
+
 qt_add_qml_module(appEasyHub
     URI EasyHub
     QML_FILES
@@ -28,6 +36,7 @@ qt_add_qml_module(appEasyHub
         pages/LoginPage.qml
         pages/MRListPage.qml
         pages/MRDetailPanel.qml
+        pages/AppTheme.qml
 )
 
 qt_add_translations(appEasyHub
@@ -48,7 +57,9 @@ set_target_properties(appEasyHub PROPERTIES
 )
 
 target_link_libraries(appEasyHub
-    PRIVATE Qt6::Quick
+    PRIVATE
+        Qt6::Quick
+        Qt6::QuickControls2
 )
 
 include(GNUInstallDirs)

@@ -2,11 +2,13 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QTranslator>
+#include <QQuickStyle>
 
 #include "service/AuthService.h"
 
 int main(int argc, char *argv[])
 {
+    QQuickStyle::setStyle("Basic");
     QGuiApplication app(argc, argv);
 
     // 加载中文翻译

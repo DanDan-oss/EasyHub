@@ -5,6 +5,7 @@
 #include <QQuickStyle>
 
 #include "service/AuthService.h"
+#include "service/MRService.h"
 
 int main(int argc, char *argv[])
 {
@@ -26,7 +27,9 @@ int main(int argc, char *argv[])
 
     AuthService authService;
     engine.rootContext()->setContextProperty("authService", &authService);
-
+    MRService mrService;
+    mrService.loadTestData();
+    engine.rootContext()->setContextProperty("mrService", &mrService);
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,

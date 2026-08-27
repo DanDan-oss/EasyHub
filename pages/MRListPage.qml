@@ -11,49 +11,6 @@ Page {
 
     property bool detailVisible: false
 
-    ListModel {
-        id: mrModel
-
-        ListElement {
-            iid: 873
-            title: "Fix log overwite bug"
-            project: "MSIPTool"
-            targetBranch: "ReleaseBranch_main"
-            mrState: "Opened"
-            pipelineStatus: "Success"
-            addedLines: 10
-            deletedLines: 15
-            reviewProgress: "1/2"
-            approveProgress: "0/1"
-        }
-
-        ListElement {
-            iid: 912
-            title: "Fix login exception"
-            project: "WeSpace"
-            targetBranch: "master"
-            mrState: "Opened"
-            pipelineStatus: "Running"
-            addedLines: 8
-            deletedLines: 3
-            reviewProgress: "0/2"
-            approveProgress: "0/1"
-        }
-        ListElement {
-            iid: 1024
-            title: "Update configuration loader"
-            project: "eAPP610"
-            targetBranch: "ICP-D"
-            mrState: "Opened"
-            pipelineStatus: "failed"
-            addedLines: 23
-            deletedLines: 11
-            reviewProgress: "2/2"
-            approveProgress: "1/1"
-        }
-    }
-
-
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -215,13 +172,31 @@ Page {
                     Layout.fillHeight: true
                     spacing: 8
                     clip: true
-                    model: mrModel
+                    model: mrService.model
 
                     delegate: Rectangle {
                         id: mrCard
+                        // MRListModel 提供的Role
+                        required property int iid
+                        required property string title
+                        required property string projectName
+                        required property string sourceBranch
+                        required property string targetBranch
+                        required property string mrState
+                        required property string pipelineStatus
+                        required property int addedLines
+                        required property int deletedLines
+                        required property int reviewedCount
+                        required property int reviewerCount
+                        required property int approvedCount
+                        required property int approverCount
+                        required property string webUrl
+
+                        // delegate属性
+                        property bool hovered: false
+
                         width: mrList.width
                         height: 145
-                        property bool hovered: false
                         radius: AppTheme.radiusMedium
                         border.width: 1
                         border.color: hovered ? "#C9D8F2" : AppTheme.border
@@ -259,7 +234,7 @@ Page {
                                             console.log("MR clicked", iid, title)
                                             detailPanel.iid=iid
                                             detailPanel.mrTitle=title
-                                            detailPanel.projectName=project
+                                            detailPanel.projectName=projectName
                                             detailPanel.targetBranch=targetBranch
                                             detailPanel.mrState=mrState
                                             detailPanel.pipelineStatus=pipelineStatus
@@ -277,7 +252,7 @@ Page {
                             // 第二行: 项目 ->目标分支
                             Label {
                                 Layout.fillWidth: true
-                                text: project + " -> " + targetBranch
+                                text: projectName + " -> " + targetBranch
                                 elide: Text.ElideRight
                                 color: AppTheme.textSecondary
                             }
@@ -326,10 +301,10 @@ Page {
                             RowLayout {
                                 Layout.fillWidth: true
                                 Label {
-                                    text: qsTr("Review") + ": " + reviewProgress
+                                    text: qsTr("Review") + ": " + reviewedCount + "/" + reviewerCount
                                 }
                                 Label {
-                                    text: qsTr("Approve") + ": " + approveProgress
+                                    text: qsTr("Approve") + ": " + approvedCount + "/"+  approverCount
                                 }
                                 Item {
                                     Layout.fillWidth: true

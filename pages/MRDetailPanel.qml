@@ -14,6 +14,7 @@ Rectangle {
     property string targetBranch: ""
     property string mrState: ""
     property string pipelineStatus: ""
+    property string webUrl: ""
 
 
     ColumnLayout {

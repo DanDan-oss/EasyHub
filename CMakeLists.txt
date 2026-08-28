@@ -44,6 +44,10 @@ qt_add_qml_module(appEasyHub
         pages/MRListPage.qml
         pages/MRDetailPanel.qml
         pages/AppTheme.qml
+        pages/ProviderSidebar.qml
+    RESOURCES
+        resources/icons/codearts.svg
+        resources/icons/gitlab.svg
 )
 
 qt_add_translations(appEasyHub

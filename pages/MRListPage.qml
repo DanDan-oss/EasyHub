@@ -10,6 +10,7 @@ Page {
     signal detailClosed()
 
     property bool detailVisible: false
+    property string currentProviderName: "CodeArts"
 
     RowLayout {
         anchors.fill: parent
@@ -43,7 +44,7 @@ Page {
                     Layout.fillWidth: true
 
                     Label {
-                        text: qsTr("Merge Requests")
+                        text: mrListPage.currentProviderName
                         font.pixelSize: 22
                         font.bold: true
                         color: AppTheme.textPrimary
@@ -177,6 +178,7 @@ Page {
                     delegate: Rectangle {
                         id: mrCard
                         // MRListModel 提供的Role
+
                         required property int iid
                         required property string title
                         required property string projectName
@@ -238,6 +240,7 @@ Page {
                                             detailPanel.targetBranch=targetBranch
                                             detailPanel.mrState=mrState
                                             detailPanel.pipelineStatus=pipelineStatus
+                                            detailPanel.webUrl = webUrl
                                             if(!mrListPage.detailVisible) {
                                                 mrListPage.detailVisible=true
                                                 mrListPage.detailOpened()
@@ -313,6 +316,25 @@ Page {
                         }
                     }
                 }
+            }
+        }
+
+        ProviderSidebar {
+            id: providerSidebar
+            Layout.preferredWidth: 56
+            Layout.fillHeight: true
+
+            onProviderSelected: function(providerId, providerName) {
+                console.log("Provider selected:", providerId, providerName)
+                mrListPage.currentProviderName = providerName
+            }
+
+            onAddProviderRequested: {
+                console.log("Add provider requested")
+            }
+
+            onSettingsRequested: {
+                console.log("Settings requested")
             }
         }
     }

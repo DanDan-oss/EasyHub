@@ -4,7 +4,7 @@ import QtQuick.Controls
 
 ApplicationWindow{
     id: root
-    width: 420
+    width: 476
     height: 650
     visible: true
     title: qsTr("EasyHub")
@@ -15,6 +15,7 @@ ApplicationWindow{
 
         initialItem: LoginPage{
             onLoginSuccess:{
+                root.width = 476
                 stackView.replace(mrListPage)
             }
         }
@@ -29,11 +30,11 @@ ApplicationWindow{
             }
             onDetailOpened: {
                 root.x = root.x - 850
-                root.width = 1270
+                root.width = 1326
             }
             onDetailClosed: {
                 root.x = root.x + 850
-                root.width = 420
+                root.width = 476
             }
         }
     }
@@ -42,6 +43,7 @@ ApplicationWindow{
         id: loginPage
         LoginPage{
             onLoginSuccess:{
+                root.width = 476
                 stackView.replace(mrListPage)
             }
         }

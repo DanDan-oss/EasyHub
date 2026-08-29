@@ -10,7 +10,6 @@ Page {
     signal detailClosed()
 
     property bool detailVisible: false
-    property string currentProviderName: "CodeArts"
 
     RowLayout {
         anchors.fill: parent
@@ -44,7 +43,7 @@ Page {
                     Layout.fillWidth: true
 
                     Label {
-                        text: mrListPage.currentProviderName
+                        text: providerModel.currentProviderName
                         font.pixelSize: 22
                         font.bold: true
                         color: AppTheme.textPrimary
@@ -73,7 +72,12 @@ Page {
                                 mrListPage.detailVisible=false
                                 mrListPage.detailClosed()
                             }
-                            mrListPage.logout()
+                            const providerId = providerModel.currentProviderId
+                            if(providerId === "")
+                                return
+                            authService.logout(providerId)
+                            if(providerModel.currentProviderId === "")
+                                mrListPage.logout()
                         }
                     }
                 }
@@ -326,7 +330,6 @@ Page {
 
             onProviderSelected: function(providerId, providerName) {
                 console.log("Provider selected:", providerId, providerName)
-                mrListPage.currentProviderName = providerName
             }
 
             onAddProviderRequested: {

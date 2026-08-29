@@ -23,11 +23,16 @@ qt_add_executable(appEasyHub
     service/AuthService.h
     service/MRService.cpp
     service/MRService.h
+    service/AccountManager.cpp
+    service/AccountManager.h
 
     model/MergeRequest.h
     model/MRListModel.cpp
     model/MRListModel.h
-
+    model/ProviderAccount.h
+    model/ProviderType.h
+    model/ProviderListModel.cpp
+    model/ProviderListModel.h
 )
 
 set_source_files_properties(

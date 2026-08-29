@@ -25,7 +25,7 @@ ApplicationWindow{
         id: mrListPage
         MRListPage{
             onLogout:{
-                root.width = 420
+                root.width = 476
                 stackView.replace(loginPage)
             }
             onDetailOpened: {

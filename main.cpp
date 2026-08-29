@@ -6,6 +6,9 @@
 
 #include "service/AuthService.h"
 #include "service/MRService.h"
+#include "service/AccountManager.h"
+#include "model/ProviderListModel.h"
+
 
 int main(int argc, char *argv[])
 {
@@ -24,12 +27,16 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
-
-    AuthService authService;
-    engine.rootContext()->setContextProperty("authService", &authService);
     MRService mrService;
+    AccountManager accountManager;
+    ProviderListModel providerListModel(&accountManager);
+    AuthService authService(&accountManager);
+
     mrService.loadTestData();
+    engine.rootContext()->setContextProperty("authService", &authService);
+    engine.rootContext()->setContextProperty("providerModel", &providerListModel);
     engine.rootContext()->setContextProperty("mrService", &mrService);
+
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,

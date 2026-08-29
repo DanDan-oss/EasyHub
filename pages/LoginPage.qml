@@ -6,22 +6,6 @@ Page{
     id: loginPage
     signal loginSuccess()
 
-    ListModel{
-        id: providerModel
-        ListElement{
-            name: "CodeArts"
-            providerId: "codearts"
-            iconSource: "../resources/icons/codearts.svg"
-            loggedIn: false
-        }
-        ListElement{
-            name: "GitLab"
-            providerId: "gitlab"
-            iconSource: "../resources/icons/gitlab.svg"
-            loggedIn: false
-        }
-    }
-
     background: Rectangle {
         color: AppTheme.background
     }
@@ -66,13 +50,9 @@ Page{
 
                 ComboBox {
                     id: providerComboBox
-                    width: parent.width
-                    height: 40
-
                     model: providerModel
-                    textRole: "name"
+                    textRole: "providerName"
 
-                    // 当前选中的平台显示
                     contentItem: Row {
                         spacing: 8
                         leftPadding: 10
@@ -81,51 +61,47 @@ Page{
                             width: 24
                             height: 24
                             anchors.verticalCenter: parent.verticalCenter
-                            source: providerComboBox.currentIndex >= 0 ? providerModel.get(providerComboBox.currentIndex).iconSource : ""
+                            source: providerComboBox.currentIndex >= 0 ? providerModel.iconSourceAt(providerComboBox.currentIndex) : ""
                             fillMode: Image.PreserveAspectFit
                             smooth: true
                             mipmap: true
                         }
                         Label {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: providerComboBox.currentIndex >= 0 ? providerModel.get(providerComboBox.currentIndex).name : ""
+                            text: providerComboBox.displayText
                             color: AppTheme.textPrimary
                         }
                     }
 
-                    // 下拉列表中的每一项
                     delegate: ItemDelegate {
                         required property int index
-                        required property string name
+                        required property string providerId
+                        required property string providerName
                         required property url iconSource
                         required property bool loggedIn
 
                         width: providerComboBox.width
-                        height: 40
-
                         enabled: !loggedIn
 
                         contentItem: Row {
                             spacing: 10
-
+                            leftPadding: 10
                             Image {
                                 width: 24
                                 height: 24
                                 anchors.verticalCenter: parent.verticalCenter
-                                source: iconSource
+                                source:iconSource
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
                                 mipmap: true
-
-                                opacity: loggedIn ? 0.4 :1.0
+                                opacity: loggedIn ? 0.4 : 1.0
                             }
                             Label {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: name
+                                text: providerName
                                 color:  loggedIn ? AppTheme.textSecondary : AppTheme.textPrimary
-                                opacity: loggedIn ? 0.4 :1.0
+                                opacity: loggedIn ? 0.4 : 1.0
                             }
-
                             Label {
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: loggedIn
@@ -172,9 +148,14 @@ Page{
                 }
                 onClicked: {
                     errorLabel.text = ""
-                    var provider = providerModel.get(providerComboBox.currentIndex)
-                    console.log("Login", provider.providerId, usernameField.text)
-                    authService.login(usernameField.text, passwordField.text)
+                    if(providerComboBox.currentIndex <0)
+                    {
+                        errorLabel.text = qsTr("Please select a code platform.")
+                        return
+                    }
+                    var providerId = providerModel.providerIdAt(providerComboBox.currentIndex)
+                    console.log("Login", providerId, usernameField.text)
+                    authService.login(providerId, usernameField.text, passwordField.text)
                 }
             }
 

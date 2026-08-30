@@ -9,8 +9,6 @@ find_package(Qt6 REQUIRED COMPONENTS Quick
     QuickControls2
     LinguistTools
 )
-
-
 qt_standard_project_setup(
     REQUIRES 6.8
     I18N_SOURCE_LANGUAGE en
@@ -33,6 +31,12 @@ qt_add_executable(appEasyHub
     model/ProviderType.h
     model/ProviderListModel.cpp
     model/ProviderListModel.h
+
+    provider/IMRProvider.h
+    provider/CodeArtsMRProvider.cpp
+    provider/CodeArtsMRProvider.h
+    provider/GitLabMRProvider.cpp
+    provider/GitLabMRProvider.h
 )
 
 set_source_files_properties(

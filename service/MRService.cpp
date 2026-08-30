@@ -1,9 +1,12 @@
+#include <QDebug>
 #include "MRService.h"
 
-MRService::MRService(QObject* parent)
-    : QObject(parent), m_model(this)
+MRService::MRService(AccountManager* accountManager, QObject* parent)
+    : QObject(parent), m_accountManager(accountManager)
 {
-
+    if(!m_accountManager)
+        return;
+    connect(m_accountManager, &AccountManager::currentProviderChanged, this, &MRService::onCurrentProviderChanged);
 }
 
 MRListModel* MRService::model()
@@ -11,60 +14,80 @@ MRListModel* MRService::model()
     return &this->m_model;
 }
 
-void MRService::loadTestData()
+void MRService::registerProvider(IMRProvider* provider)
 {
-    this->m_model.clear();
+    if(!provider)
+        return;
+    const ProviderType type = provider->providerType();
+    if(type == ProviderType::Unknown)
+        return;
+    if(m_providers.contains(type))
+        return;
 
-    MergeRequest mr1;
-    mr1.iid = 873;
-    mr1.title = "Fix log overwrite bug";
-    mr1.projectName = "MSIPTool";
-    mr1.sourceBranch = "single-trunk-wxd";
-    mr1.targetBranch = "ReleaseBranch_main";
-    mr1.mrState = "Opened";
-    mr1.pipelineStatus = "Success";
-    mr1.addedLines = 10;
-    mr1.deletedLines = 15;
-    mr1.reviewedCount = 1;
-    mr1.reviewerCount = 2;
-    mr1.approvedCount = 0;
-    mr1.approverCount = 1;
-    mr1.webUrl =
-        "https://example.com/mr/873";
+    m_providers.insert(type, provider);
+    connect(provider, &IMRProvider::mergeRequestsLoaded, this, &MRService::onMergeRequestsLoaded);
+    connect(provider, &IMRProvider::refreshFailed, this, &MRService::onRefreshFailed);
 
-    m_model.addMergeRequest(mr1);
-
-    MergeRequest mr2;
-    mr2.iid = 912;
-    mr2.title = "Fix login exception";
-    mr2.projectName = "WeSpace";
-    mr2.sourceBranch = "feature/login-fix";
-    mr2.targetBranch = "master";
-    mr2.mrState = "Opened";
-    mr2.pipelineStatus = "Running";
-    mr2.addedLines = 8;
-    mr2.deletedLines = 3;
-    mr2.reviewedCount = 0;
-    mr2.reviewerCount = 2;
-    mr2.approvedCount = 0;
-    mr2.approverCount = 1;
-
-    m_model.addMergeRequest(mr2);
-
-    MergeRequest mr3;
-    mr3.iid = 1024;
-    mr3.title = "Update configuration loader";
-    mr3.projectName = "eAPP610";
-    mr3.sourceBranch = "feature/config";
-    mr3.targetBranch = "ICP-D";
-    mr3.mrState = "Opened";
-    mr3.pipelineStatus = "Failed";
-    mr3.addedLines = 23;
-    mr3.deletedLines = 11;
-    mr3.reviewedCount = 2;
-    mr3.reviewerCount = 2;
-    mr3.approvedCount = 1;
-    mr3.approverCount = 1;
-
-    m_model.addMergeRequest(mr3);
 }
+
+void MRService::refresh()
+{
+    if(!m_accountManager)
+        return;
+    const ProviderType type = m_accountManager->currentProvider();
+    if(type == ProviderType::Unknown)
+    {
+        m_model.clear();
+        return;
+    }
+
+    IMRProvider* provider = currentProvider();
+    if(!provider)
+    {
+        qWarning() << "No MR provider registered for: " <<providerTypeToString(type);
+        return;
+    }
+    provider->refresh();
+}
+
+void MRService::onCurrentProviderChanged(ProviderType type)
+{
+    qDebug() << "MR current provider changed." << providerTypeToString(type);
+    refresh();
+}
+
+void MRService::onMergeRequestsLoaded(ProviderType type, const QList<MergeRequest>& mergeRequests)
+{
+    if(!m_accountManager)
+        return;
+
+    // 已经切换到别的平台的话,这个异步结果直接丢弃
+    if(type != m_accountManager->currentProvider())
+        return;
+
+    m_model.clear();
+    for(const MergeRequest& mr : mergeRequests)
+        m_model.addMergeRequest(mr);
+}
+
+void MRService::onRefreshFailed(ProviderType type, const QString& message)
+{
+    if(!m_accountManager)
+        return;
+    if(type != m_accountManager->currentProvider())
+        return;
+    qWarning() << "MR refresh failed:" << providerTypeToString(type) << message;
+    // emit refrenshFailed(message)
+}
+
+IMRProvider* MRService::currentProvider() const
+{
+    if(!m_accountManager)
+        return nullptr;
+    const ProviderType type = m_accountManager->currentProvider();
+    auto it = m_providers.constFind(type);
+    if(it == m_providers.constEnd())
+        return nullptr;
+    return it.value();
+}
+

@@ -8,6 +8,8 @@
 #include "service/MRService.h"
 #include "service/AccountManager.h"
 #include "model/ProviderListModel.h"
+#include "provider/CodeArtsMRProvider.h"
+#include "provider/GitLabMRProvider.h"
 
 
 int main(int argc, char *argv[])
@@ -27,12 +29,16 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
-    MRService mrService;
     AccountManager accountManager;
+    MRService mrService(&accountManager);
     ProviderListModel providerListModel(&accountManager);
     AuthService authService(&accountManager);
+    CodeArtsMRProvider codeArtsProvider;
+    GitLabMRProvider gitLabProvider;
 
-    mrService.loadTestData();
+    //mrService.loadTestData();
+    mrService.registerProvider(&codeArtsProvider);
+    mrService.registerProvider(&gitLabProvider);
     engine.rootContext()->setContextProperty("authService", &authService);
     engine.rootContext()->setContextProperty("providerModel", &providerListModel);
     engine.rootContext()->setContextProperty("mrService", &mrService);

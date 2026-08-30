@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QString>
 #include <QVariantMap>
+#include <QDateTime>
 #include "AccountManager.h"
 #include "CredentialStore.h"
 #include "../provider/IAuthProvider.h"
@@ -22,7 +23,7 @@ signals:
     void logoutFailed(const QString& message);
 
 private slots:
-    void onLoginSucceeded(ProviderType type, const QString& userName, const QString& accessToken);
+    void onLoginSucceeded(ProviderType type, const QString& userName, const QString& accessToken, const QDateTime& expiresAt);
     void onLoginFailed(ProviderType type, const QString& message);
 private:
     AccountManager* m_accountManager = nullptr;

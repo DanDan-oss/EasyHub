@@ -2,6 +2,7 @@
 #include <QObject>
 #include <QString>
 #include <QVariantMap>
+#include <QDateTime>
 
 #include "../model/ProviderType.h"
 
@@ -27,6 +28,6 @@ public:
     virtual void login(const QVariantMap& parameters) = 0;
 
 signals:
-    void loginSucceeded(ProviderType type, const QString& username, const QString& accessToken);
+    void loginSucceeded(ProviderType type, const QString& username, const QString& accessToken, const QDateTime& expiresAt);
     void loginFailed(ProviderType type, const QString& message);
 };

@@ -101,13 +101,18 @@ void CodeArtsAuthProvider::login(const QVariantMap& parameters)
 
         // 登录成功,获取token
         const QByteArray token = reply->rawHeader("X-Subject-Token");
+        const QByteArray respon = reply->readAll();
         reply->deleteLater();
         if(token.isEmpty())
         {
             emit loginFailed(providerType(), " Token was not returned By IAM.");
             return;
         }
-        emit loginSucceeded(providerType(), username, QString::fromUtf8(token));
+        const QJsonDocument document = QJsonDocument::fromJson(respon);
+        const QJsonObject tokenObject = document.object().value("token").toObject();
+        const QString expires =  tokenObject.value("exoires_at").toString();
+        const QDateTime expiresAt = QDateTime::fromString(expires, Qt::ISODateWithMs);
+        emit loginSucceeded(providerType(), username, QString::fromUtf8(token), expiresAt);
     });
 
 }

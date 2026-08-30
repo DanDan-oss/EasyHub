@@ -79,7 +79,7 @@ void AuthService::logout(const QString& providerId)
     emit logoutSucceeded(providerId);
 }
 
-void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, const QString& accessToken)
+void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, const QString& accessToken, const QDateTime& expiresAt)
 {
     if(!m_accountManager)
     {
@@ -91,7 +91,7 @@ void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, c
         emit loginFailed("Credential store is unavailable.");
         return;
     }
-    m_credentialStore->setAccessToken(type, accessToken);
+    m_credentialStore->setAccessToken(type, accessToken, expiresAt);
     if(!m_accountManager->addAccount(type,userName))
     {
         m_credentialStore->clear(type);

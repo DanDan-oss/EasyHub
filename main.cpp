@@ -32,17 +32,17 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     CredentialStore credentialStore;
     AccountManager accountManager;
-    MRService mrService(&accountManager);
-    ProviderListModel providerListModel(&accountManager);
     AuthService authService(&accountManager, &credentialStore);
+    MRService mrService(&accountManager);
     CodeArtsMRProvider codeArtsProvider(&credentialStore);
+    ProviderListModel providerListModel(&accountManager);
     CodeArtsAuthProvider codeArtsAuthProvider;
-    GitLabMRProvider gitLabProvider;
+    //GitLabMRProvider gitLabProvider;
 
     const bool registered = authService.registerProvider(&codeArtsAuthProvider);
     qDebug() << "CodeArts auth provider registered: " << registered;
     mrService.registerProvider(&codeArtsProvider);
-    mrService.registerProvider(&gitLabProvider);
+    //mrService.registerProvider(&gitLabProvider);
     engine.rootContext()->setContextProperty("authService", &authService);
     engine.rootContext()->setContextProperty("providerModel", &providerListModel);
     engine.rootContext()->setContextProperty("mrService", &mrService);

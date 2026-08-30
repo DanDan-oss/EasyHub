@@ -13,7 +13,6 @@ ProviderType CodeArtsMRProvider::providerType() const
 
 void CodeArtsMRProvider::refresh()
 {
-
 /*
     QList<MergeRequest> mergeRequests;
 
@@ -40,7 +39,14 @@ void CodeArtsMRProvider::refresh()
 */
     if(!m_credentialStore)
     {
-        emit refreshFailed(providerType(), " Credential store is unavailable.");
+        emit refreshFailed(providerType(), "Credential store is unavailable.");
         return;
     }
+    if(!m_credentialStore->isAccessTokenValid(providerType()))
+    {
+        emit refreshFailed(providerType(), "Access token is unavailable or expired.");
+        return;
+    }
+    const QString accessToken = m_credentialStore->accessToken(providerType());
+    return;
 }

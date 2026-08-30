@@ -10,6 +10,7 @@
 #include "model/ProviderListModel.h"
 #include "provider/CodeArtsMRProvider.h"
 #include "provider/GitLabMRProvider.h"
+#include "provider/CodeArtsAuthProvider.h"
 
 
 int main(int argc, char *argv[])
@@ -29,14 +30,17 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
+    CredentialStore credentialStore;
     AccountManager accountManager;
     MRService mrService(&accountManager);
     ProviderListModel providerListModel(&accountManager);
-    AuthService authService(&accountManager);
-    CodeArtsMRProvider codeArtsProvider;
+    AuthService authService(&accountManager, &credentialStore);
+    CodeArtsMRProvider codeArtsProvider(&credentialStore);
+    CodeArtsAuthProvider codeArtsAuthProvider;
     GitLabMRProvider gitLabProvider;
 
-    //mrService.loadTestData();
+    const bool registered = authService.registerProvider(&codeArtsAuthProvider);
+    qDebug() << "CodeArts auth provider registered: " << registered;
     mrService.registerProvider(&codeArtsProvider);
     mrService.registerProvider(&gitLabProvider);
     engine.rootContext()->setContextProperty("authService", &authService);

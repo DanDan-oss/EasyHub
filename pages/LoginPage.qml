@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import "login"
 
 
 Page{
@@ -10,9 +11,39 @@ Page{
         color: AppTheme.background
     }
 
+    Component {
+        id: codeArtsLoginForm
+        CodeArtsLoginForm {
+            width: loginFormLoader.width
+            onLoginRequested: function (domainName, username, password, region)
+            {
+                clearError()
+                const providerId = providerModel.providerIdAt(providerComboBox.currentIndex)
+                console.log("Login CodeArts", domainName, username, region)
+                // 下一步这里再接AuthService
+                authService.login(
+                    providerId,
+                    {
+                        "domainName" : domainName,
+                        "userName": username,
+                        "password": password,
+                        "region": region
+                    }
+                )
+            }
+        }
+    }
+
+    Component {
+        id: gitLabLoginForm
+        GitLabLoginForm {
+            width: loginFormLoader.width
+        }
+    }
+
     Rectangle {
         width: 340
-        height: 360
+        height: contentColumn.implicitHeight + 52
         anchors.centerIn: parent
         radius: 16
         color: AppTheme.surface
@@ -21,6 +52,7 @@ Page{
         border.color: AppTheme.border
 
         Column {
+            id: contentColumn
             width: 280
             anchors.centerIn: parent
             spacing: 14
@@ -50,6 +82,7 @@ Page{
 
                 ComboBox {
                     id: providerComboBox
+                    width: parent.width
                     model: providerModel
                     textRole: "providerName"
 
@@ -118,57 +151,26 @@ Page{
                 }
             }
 
-            TextField{
-                id: usernameField
+            Loader {
+                id: loginFormLoader
                 width: parent.width
-                placeholderText: qsTr("Username")
-            }
-
-            TextField{
-                id: passwordField
-                width: parent.width
-                placeholderText: qsTr("Password")
-                echoMode: TextInput.Password
-            }
-
-            Button{
-                width: parent.width
-                text: qsTr("Login")
-                background: Rectangle {
-                    radius: AppTheme.radiusSmall
-                    color: parent.down ? "#2F60DF" : AppTheme.primary
-                }
-
-                contentItem: Label {
-                    text: parent.text
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.bold: true
-                }
-                onClicked: {
-                    errorLabel.text = ""
-                    if(providerComboBox.currentIndex <0)
-                    {
-                        errorLabel.text = qsTr("Please select a code platform.")
-                        return
-                    }
+                sourceComponent: {
+                    if(providerComboBox.currentIndex < 0)
+                        return null
                     var providerId = providerModel.providerIdAt(providerComboBox.currentIndex)
-                    console.log("Login", providerId, usernameField.text)
-                    authService.login(providerId, usernameField.text, passwordField.text)
+                    switch(providerId)
+                    {
+                    case "codearts":
+                        return codeArtsLoginForm
+                    case "gitlab":
+                        return gitLabLoginForm
+                    default:
+                        return null
+                    }
                 }
-            }
-
-            Label{
-                id: errorLabel
-                width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                color: AppTheme.danger
             }
         }
     }
-
 
     Connections{
         target: authService
@@ -177,7 +179,10 @@ Page{
         }
 
         function onLoginFailed(message){
-            errorLabel.text = message
+            if(loginFormLoader.item && loginFormLoader.item.showError)
+            {
+                loginFormLoader.item.showError(message)
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 #include "CodeArtsMRProvider.h"
 
-CodeArtsMRProvider::CodeArtsMRProvider(QObject* parent)
-    : IMRProvider(parent)
+CodeArtsMRProvider::CodeArtsMRProvider(CredentialStore* credentialStore, QObject* parent)
+    : IMRProvider(parent), m_credentialStore(credentialStore)
 {
 
 }
@@ -13,10 +13,14 @@ ProviderType CodeArtsMRProvider::providerType() const
 
 void CodeArtsMRProvider::refresh()
 {
+
+/*
     QList<MergeRequest> mergeRequests;
 
     MergeRequest mr1;
-    mr1.iid = 873;
+    mr1.key.iid = 873;
+    mr1.key.repositoryId = "codearts-test-repository";
+    mr1.key.providerType = providerType();
     mr1.title = "Fix log overwrite bug";
     mr1.projectName = "MSIPTool";
     mr1.sourceBranch = "single-trunk-wxd";
@@ -33,4 +37,10 @@ void CodeArtsMRProvider::refresh()
 
     mergeRequests.append(mr1);
     emit mergeRequestsLoaded(providerType(), mergeRequests);
+*/
+    if(!m_credentialStore)
+    {
+        emit refreshFailed(providerType(), " Credential store is unavailable.");
+        return;
+    }
 }

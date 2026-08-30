@@ -20,7 +20,7 @@ const ProviderAccount* AccountManager::account(ProviderType type) const
     return &it.value();
 }
 
-bool AccountManager::login(ProviderType type, const QString& username)
+bool AccountManager::addAccount(ProviderType type, const QString& username)
 {
     if(type == ProviderType::Unknown)
         return false;
@@ -37,7 +37,7 @@ bool AccountManager::login(ProviderType type, const QString& username)
     return true;
 }
 
-bool AccountManager::logout(ProviderType type)
+bool AccountManager::removeAccount(ProviderType type)
 {
     qDebug() << "logout called:" << providerTypeToString(type);
     auto it = m_accounts.find(type);

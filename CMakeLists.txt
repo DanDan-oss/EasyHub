@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Quick
     QuickControls2
     LinguistTools
+    Network
 )
 qt_standard_project_setup(
     REQUIRES 6.8
@@ -23,6 +24,8 @@ qt_add_executable(appEasyHub
     service/MRService.h
     service/AccountManager.cpp
     service/AccountManager.h
+    service/CredentialStore.cpp
+    service/CredentialStore.h
 
     model/MergeRequest.h
     model/MRListModel.cpp
@@ -37,6 +40,9 @@ qt_add_executable(appEasyHub
     provider/CodeArtsMRProvider.h
     provider/GitLabMRProvider.cpp
     provider/GitLabMRProvider.h
+    provider/IAuthProvider.h
+    provider/CodeArtsAuthProvider.cpp
+    provider/CodeArtsAuthProvider.h
 )
 
 set_source_files_properties(
@@ -49,11 +55,15 @@ qt_add_qml_module(appEasyHub
     URI EasyHub
     QML_FILES
         Main.qml
+        pages/AppTheme.qml
         pages/LoginPage.qml
         pages/MRListPage.qml
-        pages/MRDetailPanel.qml
-        pages/AppTheme.qml
-        pages/ProviderSidebar.qml
+
+        pages/login/CodeArtsLoginForm.qml
+        pages/login/GitLabLoginForm.qml
+
+        pages/MRList/MRDetailPanel.qml
+        pages/MRList/ProviderSidebar.qml
     RESOURCES
         resources/icons/codearts.svg
         resources/icons/gitlab.svg
@@ -80,6 +90,8 @@ target_link_libraries(appEasyHub
     PRIVATE
         Qt6::Quick
         Qt6::QuickControls2
+        Qt6::Network
+
 )
 
 include(GNUInstallDirs)

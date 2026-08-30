@@ -15,7 +15,9 @@ void GitLabMRProvider::refresh()
     QList<MergeRequest> mergeRequests;
 
     MergeRequest mr1;
-    mr1.iid = 1001;
+    mr1.key.iid = 1001;
+    mr1.key.providerType = providerType();
+    mr1.key.repositoryId = "gitlab-test-project";
     mr1.title = "GitLab test merge request";
     mr1.projectName = "EasyHub-GitLab";
     mr1.sourceBranch = "aaaa";

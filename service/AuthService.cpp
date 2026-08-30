@@ -1,50 +1,60 @@
 #include "AuthService.h"
 #include <QDebug>
 #include "../model/ProviderType.h"
+#include "../provider/CodeArtsAuthProvider.h"
 
-AuthService::AuthService(AccountManager* accountManager, QObject* parent)
-    : QObject(parent),m_accountManager(accountManager)
+AuthService::AuthService(AccountManager* accountManager, CredentialStore* credentialStore, QObject* parent)
+    : QObject(parent),m_accountManager(accountManager),m_credentialStore(credentialStore)
 {
-
 }
 
-void AuthService::login(const QString& providerId, const QString& username, const QString& password)
+void AuthService::login(const QString& providerId, const QVariantMap& parameters)
 {
     if(!m_accountManager)
     {
         emit loginFailed("Account manager is unavailable.");
         return;
     }
-    const ProviderType providerType = providerTypeFromString(providerId);
-    if(providerType == ProviderType::Unknown)
+    const ProviderType type = providerTypeFromString(providerId);
+    if(type == ProviderType::Unknown)
     {
-        emit loginFailed("Unknown code platform.");
+        emit loginFailed("Unknown code platform");
         return;
     }
-    if(username.trimmed().isEmpty())
+    if(m_accountManager->isLoggedIn(type))
     {
-        emit loginFailed("Username cannot be empty.");
+        emit loginFailed(providerDisplayName(type) + " is already logged in.");
         return;
     }
-    if(password.isEmpty())
+    auto it = m_providers.constFind(type);
+    if(it == m_providers.constEnd())
     {
-        emit loginFailed("Password cannot be empty.");
+        emit loginFailed("Authentication provider is unavailable.");
         return;
     }
-    if(m_accountManager->isLoggedIn(providerType))
+    it.value()->login(parameters);
+}
+
+bool AuthService::registerProvider(IAuthProvider* provider)
+{
+    if(!provider)
+        return false;
+    const ProviderType type = provider->providerType();
+    if(type== ProviderType::Unknown)
     {
-        emit loginFailed(providerDisplayName(providerType) + " is already logged in.");
-        return;
+        emit loginFailed("register proveider type is Unknown.");
+        return false;
     }
-    // 目前还没有真正连接CodeArts
-    // 暂时认为输入用户名和密码登录成功
-    const bool accountAdded = m_accountManager->login(providerType, username.trimmed());
-    if(!accountAdded)
+    if(m_providers.contains(type))
     {
-        emit loginFailed("Login failed.");
-        return;
+        emit loginFailed("register proveider type already exists.");
+        return false;
     }
-    emit loginSucceeded();
+
+    m_providers.insert(type, provider);
+    connect(provider, &IAuthProvider::loginSucceeded, this, &AuthService::onLoginSucceeded);
+    connect(provider, &IAuthProvider::loginFailed, this, &AuthService::onLoginFailed);
+    return true;
 }
 
 void AuthService::logout(const QString& providerId)
@@ -65,6 +75,34 @@ void AuthService::logout(const QString& providerId)
         emit logoutFailed(providerDisplayName(type) + " is not logged in.");
         return;
     }
-    m_accountManager->logout(type);
+    m_accountManager->removeAccount(type);
     emit logoutSucceeded(providerId);
+}
+
+void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, const QString& accessToken)
+{
+    if(!m_accountManager)
+    {
+        emit loginFailed("Account manager is unavailable.");
+        return;
+    }
+    if(!m_credentialStore)
+    {
+        emit loginFailed("Credential store is unavailable.");
+        return;
+    }
+    m_credentialStore->setAccessToken(type, accessToken);
+    if(!m_accountManager->addAccount(type,userName))
+    {
+        m_credentialStore->clear(type);
+        emit loginFailed("Failed to add account");
+        return;
+    }
+    emit loginSucceeded();
+}
+
+void AuthService::onLoginFailed(ProviderType type, const QString& message)
+{
+    Q_UNUSED(type);
+    emit loginFailed(message);
 }

@@ -1,10 +1,19 @@
 #pragma once
 
 #include <QString>
+#include "ProviderType.h"
+
+struct MergeRequestKey
+{
+    ProviderType providerType = ProviderType::Unknown;
+    QString repositoryId;
+    int iid = 0;
+};
 
 struct MergeRequest
 {
-    int iid =0;
+    MergeRequestKey key;
+
     QString title;
     QString projectName;
     QString sourceBranch;

@@ -12,8 +12,8 @@ public:
     explicit AccountManager(QObject* parent = nullptr);
     bool isLoggedIn(ProviderType type) const;
     const ProviderAccount* account(ProviderType type) const;
-    bool login(ProviderType type, const QString& username);
-    bool logout(ProviderType type);
+    bool addAccount(ProviderType type, const QString& username);
+    bool removeAccount(ProviderType type);
     ProviderType currentProvider() const;
     bool setCurrentProvider(ProviderType type);
 

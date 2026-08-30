@@ -25,7 +25,7 @@ QVariant MRListModel::data(const QModelIndex& index, int role) const
 
     switch (role) {
     case MRListModel::Roles::IidRole:
-        return mr.iid;
+        return mr.key.iid;
     case MRListModel::Roles::TitleRole:
         return mr.title;
     case MRListModel::Roles::ProjectNameRole:

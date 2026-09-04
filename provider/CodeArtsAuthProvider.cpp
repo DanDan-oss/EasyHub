@@ -9,6 +9,7 @@
 #include "CodeArtsAuthProvider.h"
 #include "IAuthProvider.h"
 
+
 CodeArtsAuthProvider::CodeArtsAuthProvider(QObject* parent)
     : IAuthProvider(parent)
 {
@@ -110,9 +111,56 @@ void CodeArtsAuthProvider::login(const QVariantMap& parameters)
         }
         const QJsonDocument document = QJsonDocument::fromJson(respon);
         const QJsonObject tokenObject = document.object().value("token").toObject();
-        const QString expires =  tokenObject.value("exoires_at").toString();
+        const QString expires =  tokenObject.value("expires_at").toString();
         const QDateTime expiresAt = QDateTime::fromString(expires, Qt::ISODateWithMs);
+        if(!expiresAt.isValid())
+        {
+            emit loginFailed(providerType(), "Invalid token expiration time returned by IAM");
+            return;
+        }
         emit loginSucceeded(providerType(), username, QString::fromUtf8(token), expiresAt);
     });
 
+}
+
+void CodeArtsAuthProvider::validateToken(const QString& accessToken)
+{
+    if(accessToken.isEmpty())
+    {
+        emit tokenValidationFailed(providerType(), "Access token is empty.");
+        return;
+    }
+    QNetworkRequest request{QUrl("https://iam.myhuaweicloud.com/v3/auth/tokens")};
+    request.setRawHeader("X-Auth-Token", accessToken.toUtf8());
+    request.setRawHeader("X-Subject-Token", accessToken.toUtf8());
+    request.setRawHeader("Content-Type", "application/json;charset=utf8");
+    QNetworkReply* reply = m_networkManager.get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]()
+    {
+        const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if(reply->error() != QNetworkReply::NoError)
+        {
+            const QString message = QString("Token validation failed. HTTP %1 : %2").arg(statusCode).arg(reply->errorString());
+            reply->deleteLater();
+            emit tokenValidationFailed(providerType(), message);
+            return;
+        }
+        // 获取token有效性成功
+        const QByteArray body = reply->readAll();
+        reply->deleteLater();
+        if(body.isEmpty())
+        {
+            emit tokenValidationFailed(providerType(), "Failed to token request  body.");
+            return;
+        }
+        const QJsonDocument document = QJsonDocument::fromJson(body);
+        const QJsonObject tokenObject = document.object().value("token").toObject();
+        const QString username = tokenObject.value("user").toObject().value("name").toString();
+        if(username.isEmpty())
+        {
+            emit tokenValidationFailed(providerType(), "Failed to obtain user information.");
+            return;
+        }
+        emit tokenValidated(providerType(), username);
+    });
 }

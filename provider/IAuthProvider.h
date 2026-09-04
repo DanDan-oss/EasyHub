@@ -26,8 +26,11 @@ public:
     ~IAuthProvider() override = default;
     virtual ProviderType providerType() const = 0;
     virtual void login(const QVariantMap& parameters) = 0;
+    virtual void validateToken(const QString& accessToken) = 0;
 
 signals:
     void loginSucceeded(ProviderType type, const QString& username, const QString& accessToken, const QDateTime& expiresAt);
     void loginFailed(ProviderType type, const QString& message);
+    void tokenValidated(ProviderType type, const QString& username);
+    void tokenValidationFailed(ProviderType type, const QString& message);
 };

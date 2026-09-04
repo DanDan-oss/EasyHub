@@ -21,6 +21,7 @@ public:
     explicit CodeArtsAuthProvider(QObject* parent = nullptr);
     ProviderType providerType() const override;
     void login(const QVariantMap& parameters) override;
+    void validateToken(const QString& accessToken) override;
 private:
     QNetworkAccessManager m_networkManager;
 };

@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QTranslator>
 #include <QQuickStyle>
+#include <QTimer>
 
 #include "service/AuthService.h"
 #include "service/MRService.h"
@@ -11,6 +12,8 @@
 #include "provider/CodeArtsMRProvider.h"
 #include "provider/GitLabMRProvider.h"
 #include "provider/CodeArtsAuthProvider.h"
+#include "service/CredentialCipher.h"
+#include "service/WindowsMasterKeyStore.h"
 
 
 int main(int argc, char *argv[])
@@ -31,8 +34,9 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     CredentialStore credentialStore;
+    CredentialCache credentialCache;
     AccountManager accountManager;
-    AuthService authService(&accountManager, &credentialStore);
+    AuthService authService(&accountManager, &credentialStore, &credentialCache);
     MRService mrService(&accountManager);
     CodeArtsMRProvider codeArtsProvider(&credentialStore);
     ProviderListModel providerListModel(&accountManager);
@@ -40,6 +44,7 @@ int main(int argc, char *argv[])
     //GitLabMRProvider gitLabProvider;
 
     const bool registered = authService.registerProvider(&codeArtsAuthProvider);
+
     qDebug() << "CodeArts auth provider registered: " << registered;
     mrService.registerProvider(&codeArtsProvider);
     //mrService.registerProvider(&gitLabProvider);
@@ -54,6 +59,7 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.loadFromModule("EasyHub", "Main");
+    QTimer::singleShot(0, &authService, &AuthService::restoreSessions);
 
     return app.exec();
 }

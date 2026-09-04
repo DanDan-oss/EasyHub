@@ -2,16 +2,20 @@
 
 void CredentialStore::setAccessToken(ProviderType type, const QString& accessToken, const QDateTime& expiresAt)
 {
+    setCredential(type, {accessToken, expiresAt});
+}
+
+void CredentialStore::setCredential(ProviderType type, const AccessCredential& credential)
+{
     if(type == ProviderType::Unknown)
         return;
-    if(accessToken.isEmpty())
+    if(credential.accessToken.isEmpty())
         return;
-    if(expiresAt.isValid())
+    if(!credential.expiresAt.isValid())
         return;
-
-    AccessCredential credential;
-    credential.accessToken = accessToken;
-    credential.expiresAt = expiresAt;
+    const QDateTime safeExpiry = credential.expiresAt.addSecs(-5*60);
+    if(QDateTime::currentDateTimeUtc() >= safeExpiry)
+        return;
     m_credentials.insert(type, credential);
 }
 
@@ -21,14 +25,6 @@ QString CredentialStore::accessToken(ProviderType type) const
     if(it == m_credentials.constEnd())
         return {};
     return it->accessToken;
-}
-
-bool  CredentialStore::hasAccessToken(ProviderType type) const
-{
-    auto it = m_credentials.constFind(type);
-    if(it == m_credentials.constEnd())
-        return false;
-    return !it->accessToken.isEmpty();
 }
 
 bool CredentialStore::isAccessTokenValid(ProviderType type) const

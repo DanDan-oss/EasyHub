@@ -26,6 +26,12 @@ qt_add_executable(appEasyHub
     service/AccountManager.h
     service/CredentialStore.cpp
     service/CredentialStore.h
+    service/CredentialCache.cpp
+    service/CredentialCache.h
+    service/WindowsMasterKeyStore.cpp
+    service/WindowsMasterKeyStore.h
+    service/CredentialCipher.cpp
+    service/CredentialCipher.h
 
     model/MergeRequest.h
     model/MRListModel.cpp
@@ -93,6 +99,15 @@ target_link_libraries(appEasyHub
         Qt6::Network
 
 )
+
+if(WIN32)
+    target_link_libraries(appEasyHub
+        PRIVATE
+            Advapi32
+            Bcrypt
+
+    )
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS appEasyHub

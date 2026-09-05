@@ -129,7 +129,7 @@ void AuthService::logout(const QString& providerId)
     emit logoutSucceeded(providerId);
 }
 
-void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, const QString& accessToken, const QDateTime& expiresAt)
+void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, const AccessCredential& credential)
 {
     if(!m_accountManager)
     {
@@ -147,7 +147,6 @@ void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, c
         return;
     }
 
-    const AccessCredential credential {accessToken, expiresAt};
     m_credentialStore->setCredential(type, credential);
     const QVariantMap loginParameters = m_pendingLoginParameters.take(type);
     if(!loginParameters.isEmpty())

@@ -178,6 +178,10 @@ Page{
             loginPage.loginSuccess()
         }
 
+        function onSessionRestored(type){
+            loginPage.loginSuccess()
+        }
+
         function onLoginFailed(message){
             if(loginFormLoader.item && loginFormLoader.item.showError)
             {

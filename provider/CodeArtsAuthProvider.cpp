@@ -73,8 +73,11 @@ void CodeArtsAuthProvider::login(const QVariantMap& parameters)
     identity["methods"] = QJsonArray{"password"};
     identity["password"] = password;
 
+    QJsonObject project;
+    project["name"] = credential.region;
+
     QJsonObject scope;
-    scope["domain"] = domain;
+    scope["project"] = project;
 
     QJsonObject auth;
     auth["identity"] = identity;
@@ -85,15 +88,20 @@ void CodeArtsAuthProvider::login(const QVariantMap& parameters)
 
     const QByteArray body = QJsonDocument(root).toJson(QJsonDocument::Compact);
 
-    qDebug() << "=================";
     // 使用 QNetworkAccessManager 请求IAM Token
+    const QString username = credential.userName;
+    const QString region = credential.region;
     QNetworkReply* reply = m_networkManager.post(request, body);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, username = credential.userName.trimmed()]()
+    connect(reply, &QNetworkReply::finished, this, [this, reply, username, region]()
     {
         const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         // 登录失败
         if(reply->error() != QNetworkReply::NoError)
         {
+            const QByteArray responseBody = reply->readAll();
+            qWarning() << "CodeArts login failed:" << statusCode << reply->errorString();
+            if(!responseBody.isEmpty())
+                qWarning() << "CodeArts IAM error response:" << QString::fromUtf8(responseBody);
             const QString message = QString("CodeArts login failed. HTTP %1:%2").arg(statusCode).arg(reply->errorString());
             reply->deleteLater();
             emit loginFailed(providerType(), message);
@@ -118,7 +126,11 @@ void CodeArtsAuthProvider::login(const QVariantMap& parameters)
             emit loginFailed(providerType(), "Invalid token expiration time returned by IAM");
             return;
         }
-        emit loginSucceeded(providerType(), username, QString::fromUtf8(token), expiresAt);
+        AccessCredential accessCredential;
+        accessCredential.accessToken = QString::fromUtf8(token);
+        accessCredential.expiresAt = expiresAt;
+        accessCredential.region = region;
+        emit loginSucceeded(providerType(), username, accessCredential);
     });
 
 }

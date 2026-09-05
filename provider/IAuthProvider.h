@@ -5,6 +5,7 @@
 #include <QDateTime>
 
 #include "../model/ProviderType.h"
+#include "../service/CredentialStore.h"
 
 
 /*
@@ -29,7 +30,7 @@ public:
     virtual void validateToken(const QString& accessToken) = 0;
 
 signals:
-    void loginSucceeded(ProviderType type, const QString& username, const QString& accessToken, const QDateTime& expiresAt);
+    void loginSucceeded(ProviderType type, const QString& username, const AccessCredential& credential);
     void loginFailed(ProviderType type, const QString& message);
     void tokenValidated(ProviderType type, const QString& username);
     void tokenValidationFailed(ProviderType type, const QString& message);

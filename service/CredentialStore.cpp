@@ -1,10 +1,5 @@
 #include "CredentialStore.h"
 
-void CredentialStore::setAccessToken(ProviderType type, const QString& accessToken, const QDateTime& expiresAt)
-{
-    setCredential(type, {accessToken, expiresAt});
-}
-
 void CredentialStore::setCredential(ProviderType type, const AccessCredential& credential)
 {
     if(type == ProviderType::Unknown)
@@ -17,6 +12,14 @@ void CredentialStore::setCredential(ProviderType type, const AccessCredential& c
     if(QDateTime::currentDateTimeUtc() >= safeExpiry)
         return;
     m_credentials.insert(type, credential);
+}
+
+const AccessCredential* CredentialStore::credential(ProviderType type)
+{
+    auto it = m_credentials.constFind(type);
+    if(it == m_credentials.constEnd())
+        return {};
+    return &it.value();
 }
 
 QString CredentialStore::accessToken(ProviderType type) const

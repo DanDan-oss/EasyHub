@@ -79,13 +79,17 @@ std::optional<AccessCredential> CredentialCache::loadAccessCredential(ProviderTy
     const QJsonObject object = document.object();
     const QString accessToken = object.value("accessToken").toString();
     const QDateTime expiresAt = QDateTime::fromString(object.value("expiresAt").toString(), Qt::ISODateWithMs);
+    const QString  region = object.value("region").toString();
     if(accessToken.isEmpty())
         return {};
     if(!expiresAt.isValid())
         return {};
+    if(region.isEmpty())
+        return {};
     AccessCredential credential;
     credential.accessToken = accessToken;
     credential.expiresAt = expiresAt;
+    credential.region = region;
     return credential;
 }
 
@@ -97,9 +101,12 @@ bool CredentialCache::saveAccessCredential(ProviderType type, const AccessCreden
         return false;
     if(!credential.expiresAt.isValid())
         return false;
+    if(credential.region.isEmpty())
+        return false;
     QJsonObject object;
     object.insert("accessToken", credential.accessToken);
     object.insert("expiresAt", credential.expiresAt.toUTC().toString(Qt::ISODateWithMs));
+    object.insert("region", credential.region);
     QByteArray plainText = QJsonDocument(object).toJson(QJsonDocument::Compact);
     if(plainText.isEmpty())
         return false;

@@ -56,6 +56,7 @@ void CodeArtsMRProvider::refresh()
     query.addQueryItem("sort", "desc");
     query.addQueryItem("offset", "0");
     query.addQueryItem("limit", "50");
+    query.addQueryItem("view", "basic");
     url.setQuery(query);
     qDebug() << "Refreshing CodeArts merge requests."  << "Region:" << credential->region;
     qDebug() << "CodeArts MR request. " << url;
@@ -110,18 +111,23 @@ void CodeArtsMRProvider::handleRefreshReply(const QByteArray& body, int statusCo
         if(!value.isObject())
             continue;
         const QJsonObject object = value.toObject();
+        //qDebug() << "CodeArts MR object keys:" <<object.keys();
         MergeRequest mergeRequest;
         mergeRequest.key.providerType = providerType();
+        mergeRequest.key.repositoryId = QString::number(object.value("target_project_id").toInteger());
         mergeRequest.key.iid = object.value("iid").toInt();
         mergeRequest.title = object.value("title").toString();
+        mergeRequest.projectName = object.value("product_name").toString();
+
         mergeRequest.sourceBranch = object.value("source_branch").toString();
         mergeRequest.targetBranch = object.value("target_branch").toString();
+
         mergeRequest.mrState = object.value("state").toString();
         mergeRequest.pipelineStatus = object.value("pipeline_status").toString();
         mergeRequest.addedLines = object.value("added_lines").toInt();
         mergeRequest.deletedLines = object.value("removed_lines").toInt();
         mergeRequest.webUrl = object.value("web_url").toString();
-        mergeRequest.projectName = object.value("product_name").toString();
+
         mergeRequests.append(std::move(mergeRequest));
     }
     qDebug() << providerTypeToString( providerType()) << " MR Loaded:" << mergeRequests.size();

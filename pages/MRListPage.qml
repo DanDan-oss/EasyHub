@@ -11,6 +11,20 @@ Page {
 
     property bool detailVisible: false
 
+    Connections {
+        target: mrService
+        function onMergeRequestDetailLoaded(iid, title, projectName, sourceBranch, targetBranch, state, pipelineStatus, webUrl) {
+            console.log("MR detail loaded:", iid, title, projectName)
+            detailPanel.iid = iid
+            detailPanel.mrTitle = title
+            detailPanel.projectName = projectName
+            detailPanel.sourceBranch = targetBranch
+            detailPanel.targetBranch = targetBranch
+            detailPanel.mrState = state
+            detailPanel.pipelineStatus = pipelineStatus
+            detailPanel.webUrl = webUrl
+        }
+    }
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -84,8 +98,25 @@ Page {
                 TabBar {
                     id: tabBar
                     Layout.fillWidth: true
+                    onCurrentIndexChanged: {
+                        mrService.setCategory(currentIndex)
+                    }
                     TabButton {
                         text: qsTr("To Merge")
+                        background: Rectangle {
+                            radius: AppTheme.radiusMedium
+                            color: parent.checked ? AppTheme.primarySoft : "transparent"
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
+                            font.bold: parent.checked
+                        }
+                    }
+                    TabButton {
+                        text: qsTr("To Approve")
                         background: Rectangle {
                             radius: AppTheme.radiusMedium
                             color: parent.checked ? AppTheme.primarySoft : "transparent"
@@ -126,20 +157,6 @@ Page {
                             font.bold: parent.checked
                         }
                     }
-                    TabButton {
-                        text: qsTr("To Approve")
-                        background: Rectangle {
-                            radius: AppTheme.radiusMedium
-                            color: parent.checked ? AppTheme.primarySoft : "transparent"
-                        }
-                        contentItem: Label {
-                            text: parent.text
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
-                            font.bold: parent.checked
-                        }
-                    }
                 }
 
                 RowLayout {
@@ -150,8 +167,12 @@ Page {
                         model: [
                             qsTr("Opened"),
                             qsTr("Closed"),
-                            qsTr("Merged")
+                            qsTr("Merged"),
+                            qsTr("All")
                         ]
+                        onCurrentIndexChanged: {
+                            mrService.setState(currentIndex)
+                        }
                     }
                     ComboBox {
                         Layout.fillWidth: true
@@ -185,6 +206,7 @@ Page {
 
                         required property int iid
                         required property string title
+                        required property string repositoryId
                         required property string projectName
                         required property string sourceBranch
                         required property string targetBranch
@@ -237,7 +259,8 @@ Page {
                                         anchors.fill: parent
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: {
-                                            console.log("MR clicked", iid, title)
+                                            console.log("MR clicked", repositoryId, iid, title)
+                                            mrService.loadMergeRequestDetail(repositoryId, iid)
                                             detailPanel.iid=iid
                                             detailPanel.mrTitle=title
                                             detailPanel.projectName=projectName

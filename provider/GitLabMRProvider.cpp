@@ -10,7 +10,7 @@ ProviderType GitLabMRProvider::providerType() const
     return ProviderType::GitLab;
 }
 
-void GitLabMRProvider::refresh()
+void GitLabMRProvider::refresh(const MergeRequestQuery& query)
 {
     QList<MergeRequest> mergeRequests;
 

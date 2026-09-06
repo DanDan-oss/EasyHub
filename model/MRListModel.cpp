@@ -4,7 +4,6 @@
 MRListModel::MRListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-
 }
 
 
@@ -30,6 +29,8 @@ QVariant MRListModel::data(const QModelIndex& index, int role) const
         return mr.title;
     case MRListModel::Roles::ProjectNameRole:
         return mr.projectName;
+    case MRListModel::Roles::RepositoryIdRole:
+        return mr.key.repositoryId;
     case MRListModel::Roles::SourceBranchRole:
         return mr.sourceBranch;
     case MRListModel::Roles::TargetBranchRole:
@@ -63,6 +64,7 @@ QHash<int, QByteArray> MRListModel::roleNames() const
     roles[MRListModel::Roles::IidRole] = "iid";
     roles[MRListModel::Roles::TitleRole] = "title";
     roles[MRListModel::Roles::ProjectNameRole] = "projectName";
+    roles[MRListModel::Roles::RepositoryIdRole] = "repositoryId";
     roles[MRListModel::Roles::SourceBranchRole] = "sourceBranch";
     roles[MRListModel::Roles::TargetBranchRole] = "targetBranch";
     roles[MRListModel::Roles::MRStateRole] = "mrState";

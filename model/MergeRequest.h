@@ -29,3 +29,21 @@ struct MergeRequest
     QString webUrl;
 };
 
+struct MergeRequestDetail
+{
+    MergeRequestKey key;
+    QString title;
+    QString description;
+    QString projectName;
+    QString sourceBranch;
+    QString targetBranch;
+
+    QString state;
+    QString pipelineStatus;
+    QString mergeStatus;
+
+    QString authorName;
+    QString assigneeName;
+    QString webUrl;
+};
+

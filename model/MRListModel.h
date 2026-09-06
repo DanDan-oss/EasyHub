@@ -12,6 +12,7 @@ public:
     enum Roles{
         IidRole =Qt::UserRole+1,
         TitleRole,
+        RepositoryIdRole,
         ProjectNameRole,
         SourceBranchRole,
         TargetBranchRole,

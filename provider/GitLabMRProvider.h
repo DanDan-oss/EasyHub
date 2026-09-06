@@ -9,5 +9,5 @@ class GitLabMRProvider : public IMRProvider
 public:
     explicit GitLabMRProvider(QObject* parent = nullptr);
     ProviderType providerType() const override;
-    void refresh() override;
+    void refresh(const MergeRequestQuery& query) override;
 };

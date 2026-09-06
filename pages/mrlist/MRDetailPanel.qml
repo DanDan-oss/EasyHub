@@ -11,6 +11,7 @@ Rectangle {
     property int iid: 0
     property string mrTitle: ""
     property string projectName: ""
+    property string sourceBranch: ""
     property string targetBranch: ""
     property string mrState: ""
     property string pipelineStatus: ""

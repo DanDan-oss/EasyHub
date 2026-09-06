@@ -40,6 +40,7 @@ qt_add_executable(appEasyHub
     model/ProviderType.h
     model/ProviderListModel.cpp
     model/ProviderListModel.h
+    model/MergeRequestQuery.h
 
     provider/IMRProvider.h
     provider/CodeArtsMRProvider.cpp

@@ -27,16 +27,18 @@ signals:
 private slots:
     void onCurrentProviderChanged(ProviderType type);
     void onMergeRequestsLoaded(ProviderType type, quint64 requestId, const QList<MergeRequest>& mergeRequests);
-    void onRefreshFailed(ProviderType type, const QString& message);
+    void onRefreshFailed(ProviderType type, quint64 requestId, const QString& message);
     void onMergeRequestDetailLoaded(ProviderType type, const MergeRequestDetail& detail);
     void onMergeRequestDetailFailed(ProviderType type, const QString& message);
 private:
     IMRProvider* currentProvider() const;
+    void updateModel();
+    bool matchesCategory(const MergeRequest& mergeRequest) const;
 private:
     MRListModel m_model;
     AccountManager* m_accountManager = nullptr;
     QHash<ProviderType, IMRProvider*> m_providers;
+    QHash<ProviderType, QList<MergeRequest>> m_mergeRequests;       // 保存各个平台最近一次同步完成后的MR集合
     MergeRequestQuery m_query;
     quint64 m_refreshRequestId = 0;
-
 };

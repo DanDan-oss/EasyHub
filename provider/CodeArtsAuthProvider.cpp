@@ -5,6 +5,7 @@
 #include <QNetworkRequest>
 #include <QUrl>
 #include <QDebug>
+#include <QJsonValue>
 
 #include "CodeArtsAuthProvider.h"
 #include "IAuthProvider.h"
@@ -118,7 +119,21 @@ void CodeArtsAuthProvider::login(const QVariantMap& parameters)
             return;
         }
         const QJsonDocument document = QJsonDocument::fromJson(respon);
+        if(!document.isObject())
+        {
+            emit loginFailed(providerType(), "Invalid IAM response.");
+            return;
+        }
         const QJsonObject tokenObject = document.object().value("token").toObject();
+        const QJsonObject userObject = tokenObject.value("user").toObject();
+        const QJsonValue userIdValue = userObject.value("id");
+        const QString remoteUserId = userIdFromObject(userObject);
+        if(remoteUserId.isEmpty())
+        {
+            emit loginFailed(providerType(), "Failed to object user ID.");
+            return;
+        }
+
         const QString expires =  tokenObject.value("expires_at").toString();
         const QDateTime expiresAt = QDateTime::fromString(expires, Qt::ISODateWithMs);
         if(!expiresAt.isValid())
@@ -126,11 +141,13 @@ void CodeArtsAuthProvider::login(const QVariantMap& parameters)
             emit loginFailed(providerType(), "Invalid token expiration time returned by IAM");
             return;
         }
+
+
         AccessCredential accessCredential;
         accessCredential.accessToken = QString::fromUtf8(token);
         accessCredential.expiresAt = expiresAt;
         accessCredential.region = region;
-        emit loginSucceeded(providerType(), username, accessCredential);
+        emit loginSucceeded(providerType(), username, remoteUserId, accessCredential);
     });
 
 }
@@ -166,13 +183,30 @@ void CodeArtsAuthProvider::validateToken(const QString& accessToken)
             return;
         }
         const QJsonDocument document = QJsonDocument::fromJson(body);
+        if(!document.isObject())
+        {
+            emit tokenValidationFailed(providerType(), "Invalid token response.");
+            return;
+        }
         const QJsonObject tokenObject = document.object().value("token").toObject();
-        const QString username = tokenObject.value("user").toObject().value("name").toString();
-        if(username.isEmpty())
+        const QJsonObject userObject = tokenObject.value("user").toObject();
+        const QString username = userObject.value("name").toString();
+        const QString remoteUserId = userIdFromObject(userObject);
+        if(username.isEmpty() || remoteUserId.isEmpty())
         {
             emit tokenValidationFailed(providerType(), "Failed to obtain user information.");
             return;
         }
-        emit tokenValidated(providerType(), username);
+        emit tokenValidated(providerType(), username, remoteUserId);
     });
+}
+
+QString CodeArtsAuthProvider::userIdFromObject(const QJsonObject& userObject) const
+{
+    const QJsonValue idValue = userObject.value("id");
+    if(idValue.isString())
+        return idValue.toString();
+    if(idValue.isDouble())
+        return QString::number(idValue.toInteger());
+    return {};
 }

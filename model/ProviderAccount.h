@@ -7,4 +7,5 @@ struct ProviderAccount
 {
     ProviderType type = ProviderType::Unknown;
     QString username;
+    QString remoteUserId;       // 平台返回的用户ID
 };

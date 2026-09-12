@@ -27,9 +27,9 @@ signals:
     void sessionRestored(ProviderType type);
 
 private slots:
-    void onLoginSucceeded(ProviderType type, const QString& userName, const AccessCredential& credential);
+    void onLoginSucceeded(ProviderType type, const QString& userName, const QString& remoteUserId, const AccessCredential& credential);
     void onLoginFailed(ProviderType type, const QString& message);
-    void onTokenValidated(ProviderType type, const QString& userName);
+    void onTokenValidated(ProviderType type, const QString& userName, const QString& remoteUserId);
     void onTokenValidationFailed(ProviderType type, const QString& message);
 private:
     void reauthenticate(ProviderType type, IAuthProvider* provider);

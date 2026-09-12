@@ -20,20 +20,27 @@ const ProviderAccount* AccountManager::account(ProviderType type) const
     return &it.value();
 }
 
-bool AccountManager::addAccount(ProviderType type, const QString& username)
+bool AccountManager::addAccount(ProviderType type, const QString& username, const QString& remoteUserId)
 {
     if(type == ProviderType::Unknown)
         return false;
+    if(username.isEmpty())
+        return false;
+    if(remoteUserId.isEmpty())
+        return false;
     if(isLoggedIn(type))
         return false;
+
     ProviderAccount account;
     account.type = type;
     account.username = username;
+    account.remoteUserId = remoteUserId;
 
-    m_accounts.insert(type, account);
+    m_accounts.insert(type, std::move(account));
     emit providerLoggedIn(type);
     setCurrentProvider(type);
-    qDebug() << "Provider logged in:" << providerTypeToString(type) << username;
+    qDebug() << "Provider logged in:" << providerTypeToString(type) << username << "remote user id available:" <<!remoteUserId.isEmpty();
+
     return true;
 }
 

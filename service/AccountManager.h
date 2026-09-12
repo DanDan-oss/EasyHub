@@ -12,7 +12,7 @@ public:
     explicit AccountManager(QObject* parent = nullptr);
     bool isLoggedIn(ProviderType type) const;
     const ProviderAccount* account(ProviderType type) const;
-    bool addAccount(ProviderType type, const QString& username);
+    bool addAccount(ProviderType type, const QString& username, const QString& remoteUserId);
     bool removeAccount(ProviderType type);
     ProviderType currentProvider() const;
     bool setCurrentProvider(ProviderType type);

@@ -10,7 +10,7 @@ ProviderType GitLabMRProvider::providerType() const
     return ProviderType::GitLab;
 }
 
-void GitLabMRProvider::refresh(const MergeRequestQuery& query)
+void GitLabMRProvider::refresh(quint64 requestId)
 {
     QList<MergeRequest> mergeRequests;
 
@@ -33,5 +33,14 @@ void GitLabMRProvider::refresh(const MergeRequestQuery& query)
     mr1.webUrl = "https://example.com/mr/873";
 
     mergeRequests.append(mr1);
-    emit mergeRequestsLoaded(providerType(), mergeRequests);
+    emit mergeRequestsLoaded(providerType(), requestId, mergeRequests);
+}
+
+void GitLabMRProvider::loadMergeRequestDetail(const QString& repositoryId, int iid)
+{
+    Q_UNUSED(repositoryId);
+    Q_UNUSED(iid);
+
+    emit mergeRequestDetailFailed(providerType(), "GitLab MR detail is not implemented.");
+
 }

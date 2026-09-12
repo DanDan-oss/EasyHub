@@ -10,6 +10,14 @@ struct MergeRequestKey
     int iid = 0;
 };
 
+struct MergeRequestRelations
+{
+    bool assignedToMe = false;
+    bool needMyReview = false;
+    bool needMyApprove = false;
+    bool createdByMe = false;
+};
+
 struct MergeRequest
 {
     MergeRequestKey key;
@@ -27,6 +35,7 @@ struct MergeRequest
     int approvedCount=0;
     int approverCount =0;
     QString webUrl;
+    MergeRequestRelations relations;
 };
 
 struct MergeRequestDetail
@@ -46,4 +55,3 @@ struct MergeRequestDetail
     QString assigneeName;
     QString webUrl;
 };
-

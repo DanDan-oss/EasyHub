@@ -30,8 +30,8 @@ public:
     virtual void validateToken(const QString& accessToken) = 0;
 
 signals:
-    void loginSucceeded(ProviderType type, const QString& username, const AccessCredential& credential);
+    void loginSucceeded(ProviderType type, const QString& username, const QString& remoteUserId, const AccessCredential& credential);
     void loginFailed(ProviderType type, const QString& message);
-    void tokenValidated(ProviderType type, const QString& username);
+    void tokenValidated(ProviderType type, const QString& username, const QString& remoteUserId);
     void tokenValidationFailed(ProviderType type, const QString& message);
 };

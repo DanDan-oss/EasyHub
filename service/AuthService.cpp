@@ -129,7 +129,7 @@ void AuthService::logout(const QString& providerId)
     emit logoutSucceeded(providerId);
 }
 
-void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, const AccessCredential& credential)
+void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, const QString& remoteUserId, const AccessCredential& credential)
 {
     if(!m_accountManager)
     {
@@ -155,7 +155,7 @@ void AuthService::onLoginSucceeded(ProviderType type, const QString& userName, c
     if(!m_credentialCache->saveAccessCredential(type, credential))
         qWarning() << "Failed to cache access credential for " << providerTypeToString(type);
 
-    if(!m_accountManager->addAccount(type, userName))
+    if(!m_accountManager->addAccount(type, userName, remoteUserId))
     {
         m_credentialStore->clear(type);
         emit loginFailed("Failed to add account.");
@@ -170,12 +170,12 @@ void AuthService::onLoginFailed(ProviderType type, const QString& message)
     emit loginFailed(message);
 }
 
-void AuthService::onTokenValidated(ProviderType type, const QString& userName)
+void AuthService::onTokenValidated(ProviderType type, const QString& userName, const QString& remoteUserId)
 {
     if(!m_accountManager)
         return;
     if(!m_accountManager->isLoggedIn(type))
-        if(!m_accountManager->addAccount(type, userName))
+        if(!m_accountManager->addAccount(type, userName, remoteUserId))
             return;
     qDebug() << "Token validated for " << providerTypeToString(type);
     emit sessionRestored(type);

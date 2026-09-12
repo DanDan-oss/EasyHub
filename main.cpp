@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     AccountManager accountManager;
     AuthService authService(&accountManager, &credentialStore, &credentialCache);
     MRService mrService(&accountManager);
-    CodeArtsMRProvider codeArtsProvider(&credentialStore);
+    CodeArtsMRProvider codeArtsProvider(&credentialStore, &accountManager);
     ProviderListModel providerListModel(&accountManager);
     CodeArtsAuthProvider codeArtsAuthProvider;
     //GitLabMRProvider gitLabProvider;

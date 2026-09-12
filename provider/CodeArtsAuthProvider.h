@@ -3,6 +3,7 @@
 #include <QNetworkAccessManager>
 #include <QString>
 #include <QVariantMap>
+#include <QJsonObject>
 
 #include "IAuthProvider.h"
 
@@ -22,6 +23,8 @@ public:
     ProviderType providerType() const override;
     void login(const QVariantMap& parameters) override;
     void validateToken(const QString& accessToken) override;
+private:
+    QString userIdFromObject(const QJsonObject& userObject) const;
 private:
     QNetworkAccessManager m_networkManager;
 };

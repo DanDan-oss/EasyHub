@@ -18,7 +18,7 @@ Page {
             detailPanel.iid = iid
             detailPanel.mrTitle = title
             detailPanel.projectName = projectName
-            detailPanel.sourceBranch = targetBranch
+            detailPanel.sourceBranch = sourceBranch
             detailPanel.targetBranch = targetBranch
             detailPanel.mrState = state
             detailPanel.pipelineStatus = pipelineStatus

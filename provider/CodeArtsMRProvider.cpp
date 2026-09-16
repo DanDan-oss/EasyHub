@@ -8,10 +8,11 @@
 #include <QDebug>
 #include "CodeArtsMRProvider.h"
 
+#include "../model/MergeRequestQuery.h"
+
 CodeArtsMRProvider::CodeArtsMRProvider(CredentialStore* credentialStore, AccountManager* accountManager, QObject* parent)
     : IMRProvider(parent), m_credentialStore(credentialStore), m_accountManager(accountManager)
 {
-
 }
 
 ProviderType CodeArtsMRProvider::providerType() const
@@ -21,44 +22,15 @@ ProviderType CodeArtsMRProvider::providerType() const
 
 void CodeArtsMRProvider::refresh(quint64 requestId)
 {
-    if(!m_credentialStore)
-    {
-        emit refreshFailed(providerType(), requestId, "Credential store is unavailable.");
-        return;
-    }
-    if(!m_credentialStore->isAccessTokenValid(providerType()))
-    {
-        emit refreshFailed(providerType(), requestId, "Access token is unavailable or expired.");
-        return;
-    }
-    const AccessCredential* credential = m_credentialStore->credential(providerType());
-    if(!credential)
-    {
-        emit refreshFailed(providerType(), requestId, "Access credential is unavailable.");
-        return;
-    }
-    if(credential->accessToken.isEmpty())
-    {
-        emit refreshFailed(providerType(), requestId, "Access token is empty.");
-        return;
-    }
-    if(credential->region.isEmpty())
-    {
-        emit refreshFailed(providerType(), requestId, "region is unavailable.");
-        return;
-    }
-
     // 当前常驻同步集合由待检视、待合并、待审核、已创建中四个的opened 组成, 只用于取个人首页四个状态的mr列表
     // 当前API获取的MR信息,没有字段直接判断mr列表中的MR是否完成已检视/已审核
-    RefreshContext context;
-    context.requestId = requestId;
-    context.pendingLists = 4;
-    m_refreshContexts.insert(requestId, std::move(context));
-    requestMergeRequestList(requestId, "assigned_to_me");
-    requestMergeRequestList(requestId, "need_my_approve");
-    requestMergeRequestList(requestId, "need_my_review");
-    requestMergeRequestList(requestId, "created_by_me");
-    return;
+    startMergeRequestLoad(requestId, MergeRequestState::Opened, RefreshType::Sync);
+}
+
+
+void CodeArtsMRProvider::loadMergeRequests(quint64 requestId, MergeRequestState state)
+{
+    startMergeRequestLoad(requestId, state, RefreshType::Query);
 }
 
 void CodeArtsMRProvider::loadMergeRequestDetail(const QString& repositoryId, int iid)
@@ -164,14 +136,14 @@ QString CodeArtsMRProvider::repositoryIdFromListItem(const QJsonObject& object)
     return {};
 }
 
-void CodeArtsMRProvider::requestMergeRequestList(quint64 requestId, const QString& scope)
+void CodeArtsMRProvider::requestMergeRequestList(quint64 requestId, const QString& scope, const QString& state)
 {
     const AccessCredential* credential = m_credentialStore->credential(providerType());
     if(!credential)
         return;
     QUrl url = QString("https://codehub-ext.%1.myhuaweicloud.com/v4/merge-requests").arg(credential->region);
     QUrlQuery query;
-    query.addQueryItem("state", "opened");
+    query.addQueryItem("state", state);
     query.addQueryItem("scope", scope);
     query.addQueryItem("order_by", "updated_at");
     query.addQueryItem("sort", "desc");
@@ -179,7 +151,10 @@ void CodeArtsMRProvider::requestMergeRequestList(quint64 requestId, const QStrin
     query.addQueryItem("limit", "50");
     query.addQueryItem("view", "basic");
     url.setQuery(query);
-    qDebug() << "CodeArts MR list request:" << "scope:" << scope <<url;
+    qDebug() << "CodeArts MR list request:"
+             << "state:" << state
+             << "scope:" << scope
+             << url;
     QNetworkRequest request(url);
     request.setRawHeader("Content-Type", "application/json;charset=utf8");
     request.setRawHeader("X-Auth-Token", credential->accessToken.toUtf8());
@@ -196,9 +171,11 @@ void CodeArtsMRProvider::requestMergeRequestList(quint64 requestId, const QStrin
         const QByteArray body = reply->readAll();
         if(reply->error() != QNetworkReply::NoError)
         {
-            qWarning() << "CodeArts MR list failed: " << "scope:" << scope << "status:" <<statusCode << reply->errorString();
+            const RefreshType type = contextIt->type;
+            const MergeRequestState state = contextIt->state;
             m_refreshContexts.erase(contextIt);
-            emit refreshFailed(providerType(),  requestId, reply->errorString());
+            qWarning() << "CodeArts MR list failed: " << "scope:" << scope << "status:" <<statusCode << reply->errorString();
+            failRefresh(requestId, type, state, reply->errorString());
             return;
         }
         handleMergeRequestListReply(body, requestId, scope);
@@ -216,14 +193,18 @@ void CodeArtsMRProvider::handleMergeRequestListReply(const QByteArray& body, qui
     const QJsonDocument document = QJsonDocument::fromJson(body, &parseError);
     if(parseError.error != QJsonParseError::NoError)
     {
+        const RefreshType type = contextIt->type;
+        const MergeRequestState state = contextIt->state;
         m_refreshContexts.erase(contextIt);
-        emit refreshFailed(providerType(), requestId, "Invalid MR response.");
+        failRefresh(requestId, type, state, "Invalid MR response.");
         return;
     }
     if(!document.isArray())
     {
+        const RefreshType type = contextIt->type;
+        const MergeRequestState state = contextIt->state;
         m_refreshContexts.erase(contextIt);
-        emit refreshFailed(providerType(), requestId, "Unexpected MR response.");
+        failRefresh(requestId, type, state, "Unexpected MR response.");
         return;
     }
     const QJsonArray items = document.array();
@@ -263,12 +244,60 @@ void CodeArtsMRProvider::handleMergeRequestListReply(const QByteArray& body, qui
         context.mergeRequests.append(std::move(mergeRequest));
         context.mergeRequestIndexes.insert(mergeRequestKey, index);
     }
-    // 三个List请求都返回后才获取完毕后
+    // 所有List请求都返回后,再开始获取Detail
     --context.pendingLists;
     if(context.pendingLists >0)
         return;
     qDebug() << "CodeArts MR candidate union:" << context.mergeRequests.size();
     startDetailRequests(requestId);
+}
+
+void CodeArtsMRProvider::startMergeRequestLoad(quint64 requestId, MergeRequestState state, RefreshType type)
+{
+    if(!m_credentialStore)
+    {
+        failRefresh(requestId, type, state, "Credential store is unavailable.");
+        return;
+    }
+    if(!m_credentialStore->isAccessTokenValid(providerType()))
+    {
+        failRefresh(requestId, type, state, "Access token is unavailable or expired.");
+        return;
+    }
+    const AccessCredential* credential = m_credentialStore->credential(providerType());
+    if(!credential)
+    {
+        failRefresh(requestId, type, state, "Access credential is unavailable.");
+        return;
+    }
+    if(credential->accessToken.isEmpty())
+    {
+        failRefresh(requestId, type, state, "Access token is empty.");
+        return;
+    }
+    if(credential->region.isEmpty())
+    {
+        failRefresh(requestId, type, state, "region is unavailable.");
+        return;
+    }
+
+    const QString stateValue = mergeRequestStateToString(state);
+    if(stateValue.isEmpty())
+    {
+        failRefresh(requestId, type, state, "Invalid merge request state.");
+        return;
+    }
+
+    RefreshContext context;
+    context.requestId = requestId;
+    context.type = type;
+    context.state = state;
+    context.pendingLists = 4;
+    m_refreshContexts.insert(requestId, std::move(context));
+    requestMergeRequestList(requestId, "assigned_to_me", stateValue);
+    requestMergeRequestList(requestId, "need_my_approve", stateValue);
+    requestMergeRequestList(requestId, "need_my_review", stateValue);
+    requestMergeRequestList(requestId, "created_by_me", stateValue);
 }
 
 void CodeArtsMRProvider::startDetailRequests(quint64 requestId)
@@ -427,10 +456,23 @@ void CodeArtsMRProvider::completeRefreshIfReady(quint64 requestId)
         return;
     if(context.pendingDetails > 0)
         return;
+    const RefreshType type = context.type;
+    const MergeRequestState state = context.state;
     QList<MergeRequest> mergeRequests = std::move(context.mergeRequests);
     m_refreshContexts.erase(contextIt);
-    qDebug() << providerTypeToString(providerType()) << "MR sync completed:" << mergeRequests.size();
-    emit mergeRequestsLoaded(providerType(), requestId, mergeRequests);
+    switch (type) {
+    case RefreshType::Sync:
+        emit mergeRequestsLoaded(providerType(), requestId, mergeRequests);
+        qDebug() << providerTypeToString(providerType()) << "MR sync completed:" << mergeRequests.size();
+        break;
+    case RefreshType::Query:
+        emit queriedMergeRequestsLoaded(providerType(), requestId, state, mergeRequests);
+        qDebug() << providerTypeToString(providerType()) << "MR query completed:" << "state:" <<static_cast<int>(state) << "count:" << mergeRequests.size();
+        break;
+    default:
+        break;
+    }
+    return;
 }
 
 QString CodeArtsMRProvider::projectNameFromListItem(const QJsonObject& object)
@@ -508,4 +550,18 @@ void CodeArtsMRProvider::parseMergeRequestRelations(MergeRequest& mergeRequest, 
     qDebug() << "CodeArts approvers:" << QJsonDocument(approvers).toJson(QJsonDocument::Compact);
     qDebug() << "CodeArts reviewers:" << QJsonDocument(reviewers).toJson(QJsonDocument::Compact);
     */
+}
+
+void CodeArtsMRProvider::failRefresh(quint64 requestId, RefreshType type, MergeRequestState state, const QString& error)
+{
+    switch (type) {
+    case RefreshType::Sync:
+        emit refreshFailed(providerType(), requestId, error);
+        break;
+    case RefreshType::Query:
+        emit queryMergeRequestsFailed(providerType(), requestId, state, error);
+        break;
+    default:
+        break;
+    }
 }

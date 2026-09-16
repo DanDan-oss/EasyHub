@@ -5,6 +5,8 @@
 
 #include "../model/MergeRequest.h"
 #include "../model/ProviderType.h"
+#include "../model/MergeRequestQuery.h"
+
 
 class IMRProvider : public QObject
 {
@@ -17,10 +19,13 @@ public:
     ~IMRProvider() override = default;
     virtual ProviderType providerType() const = 0;
     virtual void refresh(quint64 requestId) = 0;
+    virtual void loadMergeRequests(quint64 requestId, MergeRequestState state) = 0;
     virtual void loadMergeRequestDetail(const QString& repositoryId, int iid) = 0;
 signals:
     void mergeRequestsLoaded(ProviderType type, quint64 requestId, const QList<MergeRequest>& mergeRequests);
     void refreshFailed(ProviderType type, quint64 requestId, const QString& message);
     void mergeRequestDetailLoaded(ProviderType type, const MergeRequestDetail& mergeRequest);
     void mergeRequestDetailFailed(ProviderType type, const QString& message);
+    void queriedMergeRequestsLoaded(ProviderType type, quint64 requestId, MergeRequestState state, const QList<MergeRequest>& mergeRequests);
+    void queryMergeRequestsFailed(ProviderType type, quint64 requestId, MergeRequestState state, const QString& message);
 };

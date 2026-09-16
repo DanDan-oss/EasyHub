@@ -30,6 +30,9 @@ private slots:
     void onRefreshFailed(ProviderType type, quint64 requestId, const QString& message);
     void onMergeRequestDetailLoaded(ProviderType type, const MergeRequestDetail& detail);
     void onMergeRequestDetailFailed(ProviderType type, const QString& message);
+    void onQueriedMergeRequestsLoaded(ProviderType type, quint64 requestId, MergeRequestState state, const QList<MergeRequest>& mergeRequests);
+    void onQueryMergeRequestsFailed(ProviderType type, quint64 requestId, MergeRequestState state, const QString& error);
+    void onProviderLoggedIn(ProviderType type);
 private:
     IMRProvider* currentProvider() const;
     void updateModel();
@@ -40,5 +43,10 @@ private:
     QHash<ProviderType, IMRProvider*> m_providers;
     QHash<ProviderType, QList<MergeRequest>> m_mergeRequests;       // 保存各个平台最近一次同步完成后的MR集合
     MergeRequestQuery m_query;
-    quint64 m_refreshRequestId = 0;
+    QList<MergeRequest> m_queryMergeRequests;
+    MergeRequestState m_queryState = MergeRequestState::Opened;
+    quint64 m_requestId = 0;
+    quint64 m_queryRequestId = 0;
+    QHash<ProviderType, quint64> m_refreshRequestIds;
+
 };

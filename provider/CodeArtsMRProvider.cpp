@@ -225,6 +225,7 @@ void CodeArtsMRProvider::handleMergeRequestListReply(const QByteArray& body, qui
         // 使用repositoryId + iid 作为平台内唯一键
         // 将三个MR列表返回的结果合并成一个集合
         const QString mergeRequestKey = repositoryId + ":" + QString::number(iid);
+
         if(context.mergeRequestIndexes.contains(mergeRequestKey))
             continue;
         MergeRequest mergeRequest;

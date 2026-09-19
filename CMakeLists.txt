@@ -71,6 +71,7 @@ qt_add_qml_module(appEasyHub
 
         pages/MRList/MRDetailPanel.qml
         pages/MRList/ProviderSidebar.qml
+        pages/MRList/MRCategoryTabButton.qml
     RESOURCES
         resources/icons/codearts.svg
         resources/icons/gitlab.svg

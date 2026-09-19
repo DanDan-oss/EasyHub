@@ -100,9 +100,118 @@ void MRService::setState(int stats)
     provider->loadMergeRequests(requestId, newState);
 }
 
+int MRService::toMergeCount() const
+{
+    return countByCategory(MergeRequestCategory::ToMerge);
+}
+
+int MRService::toApproveCount() const
+{
+    return countByCategory(MergeRequestCategory::ToApprove);
+}
+
+int MRService::toReviewCount() const
+{
+    return countByCategory(MergeRequestCategory::ToReview);
+}
+
+int MRService::createdCount() const
+{
+    return countByCategory(MergeRequestCategory::Created);
+}
+
+IMRProvider* MRService::currentProvider() const
+{
+    if(!m_accountManager)
+        return nullptr;
+    const ProviderType type = m_accountManager->currentProvider();
+    auto it = m_providers.constFind(type);
+    if(it == m_providers.constEnd())
+        return nullptr;
+    return it.value();
+}
+
+void MRService::updateModel()
+{
+    m_model.clear();
+    if(!m_accountManager)
+        return;
+    const ProviderType type = m_accountManager->currentProvider();
+    if(type == ProviderType::Unknown)
+        return;
+    if(m_query.state != MergeRequestState::Opened)
+    {
+        for(const MergeRequest& mergeRequest : m_queryMergeRequests)
+        {
+            if(!belongsToCategory(mergeRequest, m_query.category))
+                continue;
+            m_model.addMergeRequest(mergeRequest);
+        }
+        return;
+    }
+    const auto it = m_mergeRequests.constFind(type);
+    if(it == m_mergeRequests.constEnd())
+        return;
+    const QList<MergeRequest>& mergeRequests = it.value();
+    qDebug() << "update MR model:"
+             << "category:" <<static_cast<int>(m_query.category)
+             << "cache:" << mergeRequests.size();
+
+    for(const MergeRequest& mergeRequest : mergeRequests  )
+    {
+        const bool matched = belongsToCategory(mergeRequest, m_query.category);
+        qDebug() << "MR: " << mergeRequest.key.iid
+                 << "assigned: " << mergeRequest.relations.assignedToMe
+                 << "approve: " << mergeRequest.relations.needMyApprove
+                 << "review: " << mergeRequest.relations.needMyReview
+                 << "created: " << mergeRequest.relations.createdByMe;
+        if(!matched)
+            continue;
+        m_model.addMergeRequest(mergeRequest);
+    }
+}
+
+bool MRService::belongsToCategory(const MergeRequest& mergeRequest, MergeRequestCategory category) const
+{
+    switch (category) {
+    case MergeRequestCategory::ToMerge:
+        return mergeRequest.relations.assignedToMe;
+    case MergeRequestCategory::ToApprove:
+        return mergeRequest.relations.needMyApprove;
+    case MergeRequestCategory::ToReview:
+        return mergeRequest.relations.needMyReview;
+    case MergeRequestCategory::Created:
+        return mergeRequest.relations.createdByMe;
+    default:
+        return false;
+    }
+    return false;
+}
+
+int MRService::countByCategory(MergeRequestCategory category) const
+{
+    if(!m_accountManager)
+        return 0;
+    const ProviderType type = m_accountManager->currentProvider();
+    if(type == ProviderType::Unknown)
+        return 0;
+    const auto it = m_mergeRequests.constFind(type);
+    if(it == m_mergeRequests.constEnd())
+        return 0;
+
+    int count = 0;
+    for(const MergeRequest& mergeRequest : it.value())
+    {
+        if(belongsToCategory(mergeRequest, category))
+            ++count;
+    }
+    return count;
+}
+
 void MRService::onCurrentProviderChanged(ProviderType type)
 {
     qDebug() << "MR current provider changed." << providerTypeToString(type);
+    emit countsChanged();
     m_queryMergeRequests.clear();
     if(m_query.state  == MergeRequestState::Opened)
     {
@@ -139,6 +248,35 @@ void MRService::onMergeRequestsLoaded(ProviderType type, quint64 requestId, cons
         return;
     }
     // 保存本次完整的同步结果
+    QSet<QString> currentSnapshot;
+    for(const MergeRequest& mergeRequest : mergeRequests)
+        currentSnapshot.insert(mergeRequest.key.id());
+
+    if(!m_mergeRequestSnapshots.contains(type))
+    {
+        m_mergeRequestSnapshots.insert(type, currentSnapshot);
+        qDebug() << providerTypeToString(type) << "MR snapshot initialized:" <<currentSnapshot.size();
+    } else
+    {
+        const QSet<QString> previousSnapshot = m_mergeRequestSnapshots.value(type);
+        const QSet<QString> addedMergeRequests = currentSnapshot - previousSnapshot;
+        QList<MergeRequest> newMergeRequests;
+        for(const MergeRequest& mergeRequest : mergeRequests)
+        {
+            if(!addedMergeRequests.contains(mergeRequest.key.id()))
+                continue;
+            newMergeRequests.append(mergeRequest);
+        }
+
+        qDebug() << providerTypeToString(type)  << "MR snapshot changed:"
+                 << "previous:" << previousSnapshot.size()
+                 << "current:" << currentSnapshot.size()
+                 << "added:" << addedMergeRequests.size();
+        m_mergeRequestSnapshots.insert(type, currentSnapshot);
+        if(!newMergeRequests.isEmpty())
+            emit mergeRequestsAdded(type, newMergeRequests);
+    }
+
     m_mergeRequests.insert(type, mergeRequests);
     qDebug() << providerTypeToString(type) << "MR cache updated:" << mergeRequests.size();
 
@@ -148,7 +286,7 @@ void MRService::onMergeRequestsLoaded(ProviderType type, quint64 requestId, cons
     // 如果不是当前显示的平台,不需要刷新前台
     if(type != m_accountManager->currentProvider())
         return;
-
+    emit countsChanged();
     updateModel();
 }
 
@@ -235,71 +373,4 @@ void MRService::onQueryMergeRequestsFailed(ProviderType type, quint64 requestId,
     provider->refresh(requestId);
 }
 
-IMRProvider* MRService::currentProvider() const
-{
-    if(!m_accountManager)
-        return nullptr;
-    const ProviderType type = m_accountManager->currentProvider();
-    auto it = m_providers.constFind(type);
-    if(it == m_providers.constEnd())
-        return nullptr;
-    return it.value();
-}
-
-void MRService::updateModel()
-{
-    m_model.clear();
-    if(!m_accountManager)
-        return;
-    const ProviderType type = m_accountManager->currentProvider();
-    if(type == ProviderType::Unknown)
-        return;
-    if(m_query.state != MergeRequestState::Opened)
-    {
-        for(const MergeRequest& mergeRequest : m_queryMergeRequests)
-        {
-            if(!matchesCategory(mergeRequest))
-                continue;
-            m_model.addMergeRequest(mergeRequest);
-        }
-        return;
-    }
-    const auto it = m_mergeRequests.constFind(type);
-    if(it == m_mergeRequests.constEnd())
-        return;
-    const QList<MergeRequest>& mergeRequests = it.value();
-    qDebug() << "update MR model:"
-             << "category:" <<static_cast<int>(m_query.category)
-             << "cache:" << mergeRequests.size();
-
-    for(const MergeRequest& mergeRequest : mergeRequests  )
-    {
-        const bool matched = matchesCategory(mergeRequest);
-        qDebug() << "MR: " << mergeRequest.key.iid
-                 << "assigned: " << mergeRequest.relations.assignedToMe
-                 << "approve: " << mergeRequest.relations.needMyApprove
-                 << "review: " << mergeRequest.relations.needMyReview
-                 << "created: " << mergeRequest.relations.createdByMe;
-        if(!matched)
-            continue;
-        m_model.addMergeRequest(mergeRequest);
-    }
-}
-
-bool MRService::matchesCategory(const MergeRequest& mergeRequest) const
-{
-    switch (m_query.category) {
-    case MergeRequestCategory::ToMerge:
-        return mergeRequest.relations.assignedToMe;
-    case MergeRequestCategory::ToApprove:
-        return mergeRequest.relations.needMyApprove;
-    case MergeRequestCategory::ToReview:
-        return mergeRequest.relations.needMyReview;
-    case MergeRequestCategory::Created:
-        return mergeRequest.relations.createdByMe;
-    default:
-        return false;
-    }
-    return false;
-}
 

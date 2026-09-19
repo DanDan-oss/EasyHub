@@ -8,6 +8,10 @@ struct MergeRequestKey
     ProviderType providerType = ProviderType::Unknown;
     QString repositoryId;
     int iid = 0;
+    QString id() const
+    {
+        return repositoryId + ":" + QString::number(iid);
+    }
 };
 
 struct MergeRequestRelations

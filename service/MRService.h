@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QHash>
+#include <QSet>
 #include "../model/MRListModel.h"
 #include "../model/ProviderType.h"
 #include "../service/AccountManager.h"
@@ -12,6 +13,10 @@ class MRService : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(MRListModel* model READ model CONSTANT)
+    Q_PROPERTY(int toMergeCount READ toMergeCount  NOTIFY countsChanged)
+    Q_PROPERTY(int toApproveCount READ toApproveCount NOTIFY countsChanged)
+    Q_PROPERTY(int toReviewCount READ toReviewCount NOTIFY countsChanged)
+    Q_PROPERTY(int createdCount READ createdCount NOTIFY countsChanged)
 
 public:
     explicit MRService(AccountManager* accountManager, QObject* parent = nullptr);
@@ -21,9 +26,21 @@ public:
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void setCategory(int category);
     Q_INVOKABLE void setState(int stats);
+    int toMergeCount() const;
+    int toApproveCount() const;
+    int toReviewCount() const;
+    int createdCount() const;
+private:
+    IMRProvider* currentProvider() const;
+    void updateModel();
+    bool belongsToCategory(const MergeRequest& mergeRequest, MergeRequestCategory category) const;
+    int countByCategory(MergeRequestCategory category) const;
+
 signals:
     void mergeRequestDetailLoaded(int iid, const QString& title, const QString& projectName, const QString& sourceBranch, \
                                   const QString& targetBranch, const QString& state, const QString& pipelineStatus, const QString& webUrl);
+    void mergeRequestsAdded(ProviderType type, const QList<MergeRequest>& mergeRequests);
+    void countsChanged();
 private slots:
     void onCurrentProviderChanged(ProviderType type);
     void onMergeRequestsLoaded(ProviderType type, quint64 requestId, const QList<MergeRequest>& mergeRequests);
@@ -33,10 +50,6 @@ private slots:
     void onQueriedMergeRequestsLoaded(ProviderType type, quint64 requestId, MergeRequestState state, const QList<MergeRequest>& mergeRequests);
     void onQueryMergeRequestsFailed(ProviderType type, quint64 requestId, MergeRequestState state, const QString& error);
     void onProviderLoggedIn(ProviderType type);
-private:
-    IMRProvider* currentProvider() const;
-    void updateModel();
-    bool matchesCategory(const MergeRequest& mergeRequest) const;
 private:
     MRListModel m_model;
     AccountManager* m_accountManager = nullptr;
@@ -48,5 +61,5 @@ private:
     quint64 m_requestId = 0;
     quint64 m_queryRequestId = 0;
     QHash<ProviderType, quint64> m_refreshRequestIds;
-
+    QHash<ProviderType, QSet<QString>> m_mergeRequestSnapshots;
 };

@@ -96,66 +96,26 @@ Page {
                     }
                 }
                 TabBar {
-                    id: tabBar
+                    id: categoryTabBar
                     Layout.fillWidth: true
                     onCurrentIndexChanged: {
                         mrService.setCategory(currentIndex)
                     }
-                    TabButton {
+                    MRCategoryTabButton {
                         text: qsTr("To Merge")
-                        background: Rectangle {
-                            radius: AppTheme.radiusMedium
-                            color: parent.checked ? AppTheme.primarySoft : "transparent"
-                        }
-                        contentItem: Label {
-                            text: parent.text
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
-                            font.bold: parent.checked
-                        }
+                        count:  mrService.toMergeCount
                     }
-                    TabButton {
+                    MRCategoryTabButton {
                         text: qsTr("To Approve")
-                        background: Rectangle {
-                            radius: AppTheme.radiusMedium
-                            color: parent.checked ? AppTheme.primarySoft : "transparent"
-                        }
-                        contentItem: Label {
-                            text: parent.text
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
-                            font.bold: parent.checked
-                        }
+                        count:  mrService.toApproveCount
                     }
-                    TabButton {
+                    MRCategoryTabButton {
                         text: qsTr("To Review")
-                        background: Rectangle {
-                            radius: AppTheme.radiusMedium
-                            color: parent.checked ? AppTheme.primarySoft : "transparent"
-                        }
-                        contentItem: Label {
-                            text: parent.text
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
-                            font.bold: parent.checked
-                        }
+                        count:  mrService.toReviewCount
                     }
-                    TabButton {
+                    MRCategoryTabButton {
                         text: qsTr("Created")
-                        background: Rectangle {
-                            radius: AppTheme.radiusMedium
-                            color: parent.checked ? AppTheme.primarySoft : "transparent"
-                        }
-                        contentItem: Label {
-                            text: parent.text
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            color: parent.checked ? AppTheme.primary : AppTheme.textSecondary
-                            font.bold: parent.checked
-                        }
+                        count:  mrService.createdCount
                     }
                 }
 

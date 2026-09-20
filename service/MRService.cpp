@@ -8,6 +8,9 @@ MRService::MRService(AccountManager* accountManager, QObject* parent)
         return;
     connect(m_accountManager, &AccountManager::currentProviderChanged, this, &MRService::onCurrentProviderChanged);
     connect(m_accountManager, &AccountManager::providerLoggedIn, this, &MRService::onProviderLoggedIn);
+    m_refreshTimer.setInterval(AppConfig::MRRefreshIntervalMs);
+    connect(&m_refreshTimer, &QTimer::timeout, this, &MRService::refresh);
+    m_refreshTimer.start();
 }
 
 MRListModel* MRService::model()
@@ -50,7 +53,7 @@ void MRService::refresh()
 {
     if(!m_accountManager)
         return;
-    for(auto it = m_providers.begin(); it != m_providers.constEnd(); ++it)
+    for(auto it = m_providers.constBegin(); it != m_providers.constEnd(); ++it)
     {
         const ProviderType type = it.key();
         IMRProvider* provider = it.value();
@@ -61,7 +64,13 @@ void MRService::refresh()
         }
         if(!m_accountManager->isLoggedIn(type))
             continue;
+        if(m_refreshingProviders.contains(type))
+        {
+            qDebug() << "MR refresh skipped, sync already in progress:" << providerTypeToString(type);
+            continue;
+        }
         const quint64 requestId = ++m_requestId;
+        m_refreshingProviders.insert(type);
         m_refreshRequestIds.insert(type, requestId);
         qDebug() << "MR refresh started:" << providerTypeToString(type) << "requestId:" <<requestId;
         provider->refresh(requestId);
@@ -78,13 +87,13 @@ void MRService::setCategory(int category)
     updateModel();
 }
 
-void MRService::setState(int stats)
+void MRService::setState(int state)
 {
-    const auto newState = static_cast<MergeRequestState>(stats);
+    const auto newState = static_cast<MergeRequestState>(state);
     if(m_query.state  == newState)
         return;
     m_query.state = newState;
-    qDebug() << "MR state changed: " << stats;
+    qDebug() << "MR state changed: " << state;
     if(newState == MergeRequestState::Opened)
     {
         m_queryMergeRequests.clear();
@@ -185,7 +194,6 @@ bool MRService::belongsToCategory(const MergeRequest& mergeRequest, MergeRequest
     default:
         return false;
     }
-    return false;
 }
 
 int MRService::countByCategory(MergeRequestCategory category) const
@@ -244,9 +252,10 @@ void MRService::onMergeRequestsLoaded(ProviderType type, quint64 requestId, cons
     // 过时的请求结果直接丢弃
     if(requestId != m_refreshRequestIds.value(type))
     {
-        qDebug() << "Discard stale MR response:" << providerTypeToString(type) << requestId << " current:" << m_refreshRequestIds.value(type);
+        qDebug() << "Discard stale MR response:" << providerTypeToString(type) << "requestId:" << requestId;
         return;
     }
+    m_refreshingProviders.remove(type);
     // 保存本次完整的同步结果
     QSet<QString> currentSnapshot;
     for(const MergeRequest& mergeRequest : mergeRequests)
@@ -274,7 +283,12 @@ void MRService::onMergeRequestsLoaded(ProviderType type, quint64 requestId, cons
                  << "added:" << addedMergeRequests.size();
         m_mergeRequestSnapshots.insert(type, currentSnapshot);
         if(!newMergeRequests.isEmpty())
+        {
+            for(const MergeRequest& mergeRequest : newMergeRequests)
+                qDebug() << "New MR detected:" << providerTypeToString(type)
+                         << mergeRequest.key.repositoryId << mergeRequest.key.iid << mergeRequest.title;
             emit mergeRequestsAdded(type, newMergeRequests);
+        }
     }
 
     m_mergeRequests.insert(type, mergeRequests);
@@ -293,8 +307,12 @@ void MRService::onMergeRequestsLoaded(ProviderType type, quint64 requestId, cons
 void MRService::onRefreshFailed(ProviderType type, quint64 requestId, const QString& message)
 {
     if(requestId != m_refreshRequestIds.value(type))
+    {
+        qDebug() << "Discard stale MR refresh failure:" << providerTypeToString(type) << "requestId:" << requestId;
         return;
-    qWarning() << "MR refresh failed:" << providerTypeToString(type) << message;
+    }
+    m_refreshingProviders.remove(type);
+    qWarning() << "MR refresh failed:" << providerTypeToString(type) << "requestId:" << requestId  << "error:" << message;
     // emit refrenshFailed(message)
 }
 
@@ -333,7 +351,6 @@ void MRService::onQueriedMergeRequestsLoaded(ProviderType type, quint64 requestI
     if(type != provider->providerType())
         return;
     m_queryMergeRequests = mergeRequests;
-    m_queryState = state;
     qDebug() << providerTypeToString(type)
              << "MR query cache updated:"
              << "state:" << static_cast<int>(state)
@@ -367,7 +384,10 @@ void MRService::onQueryMergeRequestsFailed(ProviderType type, quint64 requestId,
     IMRProvider* provider = it.value();
     if(!provider)
         return;
+    if(m_refreshingProviders.contains(type))
+        return;
     const quint64 requestId = ++m_requestId;
+    m_refreshingProviders.insert(type);
     m_refreshRequestIds.insert(type, requestId);
     qDebug() << "MR initial sync started:" << providerTypeToString(type) << "requestId:" <<requestId;
     provider->refresh(requestId);

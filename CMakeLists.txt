@@ -18,6 +18,8 @@ qt_standard_project_setup(
 
 qt_add_executable(appEasyHub
     main.cpp
+    config/AppConfig.h
+
     service/AuthService.cpp
     service/AuthService.h
     service/MRService.cpp
@@ -43,6 +45,7 @@ qt_add_executable(appEasyHub
     model/MergeRequestQuery.h
 
     provider/IMRProvider.h
+    provider/CodeArtsApi.h
     provider/CodeArtsMRProvider.cpp
     provider/CodeArtsMRProvider.h
     provider/GitLabMRProvider.cpp

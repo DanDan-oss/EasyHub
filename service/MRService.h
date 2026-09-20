@@ -3,11 +3,13 @@
 #include <QObject>
 #include <QHash>
 #include <QSet>
+#include <QTimer>
 #include "../model/MRListModel.h"
 #include "../model/ProviderType.h"
 #include "../service/AccountManager.h"
 #include "../provider/IMRProvider.h"
 #include "../model/MergeRequestQuery.h"
+#include "../config/AppConfig.h"
 
 class MRService : public QObject
 {
@@ -25,7 +27,7 @@ public:
     Q_INVOKABLE void loadMergeRequestDetail(const QString& repositoryId, int iid);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void setCategory(int category);
-    Q_INVOKABLE void setState(int stats);
+    Q_INVOKABLE void setState(int state);
     int toMergeCount() const;
     int toApproveCount() const;
     int toReviewCount() const;
@@ -57,9 +59,10 @@ private:
     QHash<ProviderType, QList<MergeRequest>> m_mergeRequests;       // 保存各个平台最近一次同步完成后的MR集合
     MergeRequestQuery m_query;
     QList<MergeRequest> m_queryMergeRequests;
-    MergeRequestState m_queryState = MergeRequestState::Opened;
     quint64 m_requestId = 0;
     quint64 m_queryRequestId = 0;
     QHash<ProviderType, quint64> m_refreshRequestIds;
     QHash<ProviderType, QSet<QString>> m_mergeRequestSnapshots;
+    QSet<ProviderType> m_refreshingProviders;
+    QTimer m_refreshTimer;
 };

@@ -9,6 +9,7 @@
 
 #include "CodeArtsAuthProvider.h"
 #include "IAuthProvider.h"
+#include "CodeArtsApi.h"
 
 
 CodeArtsAuthProvider::CodeArtsAuthProvider(QObject* parent)
@@ -54,8 +55,7 @@ void CodeArtsAuthProvider::login(const QVariantMap& parameters)
     }
 
     // 设置消息头
-    const QString url = QString("https://iam.%1.myhuaweicloud.com/v3/auth/tokens").arg(credential.region.trimmed());
-    QNetworkRequest request{QUrl(url)};
+    QNetworkRequest request{ CodeArtsApi::regionalTokenUrl(credential.region) };
     request.setRawHeader("Content-Type", "application/json;charset=utf8");
 
     // 拼接消息体
@@ -159,7 +159,7 @@ void CodeArtsAuthProvider::validateToken(const QString& accessToken)
         emit tokenValidationFailed(providerType(), "Access token is empty.");
         return;
     }
-    QNetworkRequest request{QUrl("https://iam.myhuaweicloud.com/v3/auth/tokens")};
+    QNetworkRequest request{ CodeArtsApi::globalTokenUrl() };
     request.setRawHeader("X-Auth-Token", accessToken.toUtf8());
     request.setRawHeader("X-Subject-Token", accessToken.toUtf8());
     request.setRawHeader("Content-Type", "application/json;charset=utf8");

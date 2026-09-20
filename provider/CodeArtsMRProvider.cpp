@@ -9,6 +9,7 @@
 #include "CodeArtsMRProvider.h"
 
 #include "../model/MergeRequestQuery.h"
+#include "CodeArtsApi.h"
 
 CodeArtsMRProvider::CodeArtsMRProvider(CredentialStore* credentialStore, AccountManager* accountManager, QObject* parent)
     : IMRProvider(parent), m_credentialStore(credentialStore), m_accountManager(accountManager)
@@ -53,9 +54,8 @@ void CodeArtsMRProvider::loadMergeRequestDetail(const QString& repositoryId, int
     }
     qDebug() << "CodeArts load MR detail:" << repositoryId << iid;
     // GET /v4/repositories/{repository_id}/merge-requests/{merge_request_iid}
-    const QUrl url(QString("https://codehub-ext.%1.myhuaweicloud.com/v4/repositories/%2/merge-requests/%3").arg(credential->region).arg(repositoryId).arg(iid));
     qDebug() << "Loading CodeArts MR detail." << "Repository:" <<repositoryId <<"IID:" <<iid;
-    QNetworkRequest request(url);
+    QNetworkRequest request{ CodeArtsApi::mergeRequestDetailUrl(credential->region, repositoryId ,iid) };
     request.setRawHeader("X-Auth-Token", credential->accessToken.toUtf8());
     QNetworkReply* reply = m_networkManager.get(request);
     connect(reply, &QNetworkReply::finished, this, [this, reply]()
@@ -141,7 +141,7 @@ void CodeArtsMRProvider::requestMergeRequestList(quint64 requestId, const QStrin
     const AccessCredential* credential = m_credentialStore->credential(providerType());
     if(!credential)
         return;
-    QUrl url = QString("https://codehub-ext.%1.myhuaweicloud.com/v4/merge-requests").arg(credential->region);
+    QUrl url = CodeArtsApi::mergeRequestListUrl(credential->region);
     QUrlQuery query;
     query.addQueryItem("state", state);
     query.addQueryItem("scope", scope);
@@ -341,7 +341,7 @@ void CodeArtsMRProvider::requestMergeRequestDetail(quint64 requestId, int index)
         return;
     }
     const MergeRequest& mergeRequest = context.mergeRequests.at(index);
-    QUrl url(QString("https://codehub-ext.%1.myhuaweicloud.com/v4/repositories/%2/merge-requests/%3").arg(credential->region).arg(mergeRequest.key.repositoryId).arg(mergeRequest.key.iid));
+    QUrl url(CodeArtsApi::mergeRequestDetailUrl(credential->region, mergeRequest.key.repositoryId, mergeRequest.key.iid));
 
     QUrlQuery query;
     query.addQueryItem("view", "basic");

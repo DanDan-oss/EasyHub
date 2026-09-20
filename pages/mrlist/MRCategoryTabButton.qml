@@ -23,11 +23,11 @@ TabButton {
             width: Math.max(18, countLabel.implicitWidth + 8)
             height: 18
             radius: height / 2
-            color: AppTheme.primary
+            color: AppTheme.danger
             Label {
                 id: countLabel
                 anchors.centerIn: parent
-                text: control.count
+                text: control.count > 99 ? "99+" : control.count
                 color: "white"
                 font.pixelSize: 11
                 font.bold: true

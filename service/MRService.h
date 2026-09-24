@@ -28,6 +28,7 @@ public:
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void setCategory(int category);
     Q_INVOKABLE void setState(int state);
+    Q_INVOKABLE void openMergeRequest(int providerType, const QString& repositoryId, int iid);
     int toMergeCount() const;
     int toApproveCount() const;
     int toReviewCount() const;

@@ -8,6 +8,7 @@ Rectangle {
     signal providerSelected(string providerId, string providerName)
     signal addProviderRequested()
     signal settingsRequested()
+    signal notificationRequested()
 
     implicitWidth: 56
     color: AppTheme.surface
@@ -94,6 +95,50 @@ Rectangle {
 
         Item {
             Layout.fillHeight: true
+        }
+
+        // 消息
+        Rectangle {
+            Layout.preferredWidth: 44
+            Layout.preferredHeight: 44
+            radius: AppTheme.radiusMedium
+            color: notificationMouseArea.containsMouse ? AppTheme.surfaceHover : "transparent"
+            Label {
+                anchors.centerIn: parent
+                text: "●"
+                font.pixelSize: 16
+                color: AppTheme.textSecondary
+            }
+
+            Rectangle {
+                visible: notificationService.unreadCount > 0
+                anchors.top: parent.top
+                anchors.right: parent.right
+                width: Math.max(18, countLabel.implicitWidth + 8)
+                height: 18
+                radius: height / 2
+                color: AppTheme.danger
+
+                Label {
+                    id: countLabel
+                    anchors.centerIn: parent
+                    text: notificationService.unreadCount > 99 ? "99+" : notificationService.unreadCount
+                    color: "white"
+                    font.pixelSize: 10
+                    font.bold: true
+                }
+            }
+            MouseArea {
+                id: notificationMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    sidebar.notificationRequested()
+                }
+            }
+            ToolTip.visible: notificationMouseArea.containsMouse
+            ToolTip.text: qsTr("Messages")
         }
 
         // 设置

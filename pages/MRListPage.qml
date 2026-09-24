@@ -8,6 +8,7 @@ Page {
     signal logout()
     signal detailOpened()
     signal detailClosed()
+    signal notificationRequested()
 
     property bool detailVisible: false
 
@@ -23,6 +24,10 @@ Page {
             detailPanel.mrState = state
             detailPanel.pipelineStatus = pipelineStatus
             detailPanel.webUrl = webUrl
+            if(!mrListPage.detailVisible) {
+                mrListPage.detailVisible = true
+                mrListPage.detailOpened()
+            }
         }
     }
     RowLayout {
@@ -221,17 +226,6 @@ Page {
                                         onClicked: {
                                             console.log("MR clicked", repositoryId, iid, title)
                                             mrService.loadMergeRequestDetail(repositoryId, iid)
-                                            detailPanel.iid=iid
-                                            detailPanel.mrTitle=title
-                                            detailPanel.projectName=projectName
-                                            detailPanel.targetBranch=targetBranch
-                                            detailPanel.mrState=mrState
-                                            detailPanel.pipelineStatus=pipelineStatus
-                                            detailPanel.webUrl = webUrl
-                                            if(!mrListPage.detailVisible) {
-                                                mrListPage.detailVisible=true
-                                                mrListPage.detailOpened()
-                                            }
                                         }
                                     }
                                 }
@@ -321,6 +315,9 @@ Page {
 
             onSettingsRequested: {
                 console.log("Settings requested")
+            }
+            onNotificationRequested: {
+                mrListPage.notificationRequested()
             }
         }
     }

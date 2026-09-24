@@ -36,6 +36,9 @@ ApplicationWindow{
                 root.x = root.x + 850
                 root.width = 476
             }
+            onNotificationRequested: {
+                notificationCenter.open()
+            }
         }
     }
 
@@ -46,6 +49,22 @@ ApplicationWindow{
                 root.width = 476
                 stackView.replace(mrListPage)
             }
+        }
+    }
+
+    NotificationPopup {
+        id: notificationPopup
+        onMessageCenterRequested: {
+            notificationCenter.open()
+        }
+    }
+    NotificationCenter {
+        id: notificationCenter
+    }
+    Connections {
+        target: notificationService
+        function onPopupBatchReady(notificationIds) {
+            notificationPopup.showBatch(notificationIds)
         }
     }
 }

@@ -34,6 +34,8 @@ qt_add_executable(appEasyHub
     service/WindowsMasterKeyStore.h
     service/CredentialCipher.cpp
     service/CredentialCipher.h
+    service/NotificationService.cpp
+    service/NotificationService.h
 
     model/MergeRequest.h
     model/MRListModel.cpp
@@ -43,6 +45,9 @@ qt_add_executable(appEasyHub
     model/ProviderListModel.cpp
     model/ProviderListModel.h
     model/MergeRequestQuery.h
+    model/Notification.h
+    model/NotificationModel.cpp
+    model/NotificationModel.h
 
     provider/IMRProvider.h
     provider/CodeArtsApi.h
@@ -75,6 +80,9 @@ qt_add_qml_module(appEasyHub
         pages/MRList/MRDetailPanel.qml
         pages/MRList/ProviderSidebar.qml
         pages/MRList/MRCategoryTabButton.qml
+
+        pages/components/NotificationPopup.qml
+        pages/components/NotificationCenter.qml
     RESOURCES
         resources/icons/codearts.svg
         resources/icons/gitlab.svg

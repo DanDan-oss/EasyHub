@@ -14,6 +14,7 @@
 #include "provider/CodeArtsAuthProvider.h"
 #include "service/CredentialCipher.h"
 #include "service/WindowsMasterKeyStore.h"
+#include "service/NotificationService.h"
 
 
 int main(int argc, char *argv[])
@@ -33,6 +34,7 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
+    NotificationService& notificationService = NotificationService::instance();
     CredentialStore credentialStore;
     CredentialCache credentialCache;
     AccountManager accountManager;
@@ -51,6 +53,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("authService", &authService);
     engine.rootContext()->setContextProperty("providerModel", &providerListModel);
     engine.rootContext()->setContextProperty("mrService", &mrService);
+    engine.rootContext()->setContextProperty("notificationService", &notificationService);
 
     QObject::connect(
         &engine,
@@ -59,6 +62,24 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.loadFromModule("EasyHub", "Main");
+    QObject::connect(&mrService, &MRService::mergeRequestsAdded, &notificationService, [&notificationService](ProviderType type, const QList<MergeRequest>& mergeRequests)
+    {
+        QList<Notification> notifications;
+        notifications.reserve(mergeRequests.size());
+        for(const MergeRequest& mergeRequest : mergeRequests)
+        {
+            Notification notification;
+            notification.id = QString("mr:new:%1:%2:%3").arg(providerTypeToString(type)).arg(mergeRequest.key.repositoryId).arg(mergeRequest.key.iid);
+            notification.title = "New Merge Request";
+            notification.message = mergeRequest.title;
+            notification.providerType = type;
+            notification.repositoryId = mergeRequest.key.repositoryId;
+            notification.iid = mergeRequest.key.iid;
+            notifications.append(notification);
+        }
+        notificationService.push(notifications);
+    });
+    QObject::connect(&notificationService, &NotificationService::mergeRequestActivated, &mrService, &MRService::openMergeRequest);
     QTimer::singleShot(0, &authService, &AuthService::restoreSessions);
 
     return app.exec();

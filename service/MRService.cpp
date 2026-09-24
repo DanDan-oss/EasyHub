@@ -109,6 +109,20 @@ void MRService::setState(int state)
     provider->loadMergeRequests(requestId, newState);
 }
 
+void MRService::openMergeRequest(int providerType, const QString& repositoryId, int iid)
+{
+    const ProviderType type = static_cast<ProviderType>(providerType);
+    if(!m_accountManager)
+        return;
+    IMRProvider* provider = m_providers.value(type, nullptr);
+    if(!provider)
+        return;
+    if(!m_accountManager->isLoggedIn(type))
+        return;
+    m_accountManager->setCurrentProvider(type);
+    provider->loadMergeRequestDetail(repositoryId, iid);
+}
+
 int MRService::toMergeCount() const
 {
     return countByCategory(MergeRequestCategory::ToMerge);
